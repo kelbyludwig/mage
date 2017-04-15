@@ -17,12 +17,15 @@ def proj(u, v):
 
     EXAMPLES:
 
-        :: 
-            sage: v = vector(ZZ, [4,1,4])
-            sage: u = vector(ZZ, [-1,1,1])
-            sage: proj(u,v)
-            (-1/3, 1/3, 1/3)
-        :: 
+    :: 
+
+        sage: v = vector(ZZ, [4,1,4])
+        sage: u = vector(ZZ, [-1,1,1])
+        sage: from mage import vector_utils as vu
+        sage: vu.proj(u,v)
+        (-1/3, 1/3, 1/3)
+
+    :: 
 
     """
     assert len(u) == len(v)
