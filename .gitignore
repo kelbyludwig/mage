@@ -2,3 +2,5 @@
 *.md
 *.txt
 *.swp
+/dist/
+/*.egg-info
