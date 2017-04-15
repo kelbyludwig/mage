@@ -1,6 +1,5 @@
 import unittest
-from sage.all import FiniteField, EllipticCurve, randint
-from . import ecdsa
+from mage import ecdsa
 
 F = FiniteField(233970423115425145524320034830162017933)
 E = EllipticCurve(F, [-95051,11279326])
