@@ -6,11 +6,24 @@ def proj(u, v):
     projection of v onto u.
 
     INPUT:
-    - `u` - the vector to project onto
-    - `v` - the vector being projected
+
+    - ``u`` -- the vector to project onto
+
+    - ``v`` -- the vector being projected
 
     OUTPUT:
+
     The vector representing the projection of v onto u. 
+
+    EXAMPLES:
+
+        :: 
+            sage: v = vector(ZZ, [4,1,4])
+            sage: u = vector(ZZ, [-1,1,1])
+            sage: proj(u,v)
+            (-1/3, 1/3, 1/3)
+        :: 
+
     """
     assert len(u) == len(v)
     zv = _zero_vector(len(u))

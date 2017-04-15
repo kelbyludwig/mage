@@ -4,24 +4,37 @@ from sage.all import Matrix as _Matrix, copy as _copy
 def gram_schmidt(basis):
     """
     gram_schmidt takes an basis as input and returns an orthonogonal basis
-    which spans the same subspace. If the input basis vectors are not linearly
-    indepedent the output matrix will have zero vectors.
+    which spans the same subspace. 
 
     INPUT:
-    - `basis` - a matrix representing a lattice basis
+
+    - ``basis`` -- a matrix representing a lattice basis.
 
     OUTPUT:
+
     A matrix representing the orthonormalized input basis.
+
+    .. SEEALSO::
+
+        :meth:`sage.matrix.matrix2.Matrix.gram_schmidt`
+
+    .. NOTE::
+
+        this function will not fail if given a invalid basis.
 
     EXAMPLES:
 
     ::
+
         sage: A = Matrix(QQ, [[1,2,3],[74,61,2],[3,3,3]])
-        sage: oA1 = gram_schmidt(A) 
+        sage: from mage import matrix_utils as mu
+        sage: oA1 = mu.gram_schmidt(A) 
         sage: oA2, _ = A.gram_schmidt() #sage's built in gram_schmidt for testing
         sage: oA1 == oA2
         True
+
     ::
+
     """
     Q = []
     for i, v in enumerate(basis):
@@ -35,21 +48,37 @@ def LLL(basis, delta=.99):
     orthogonal vectors.
 
     INPUT:
-    - `basis` - a matrix representing a lattice basis
-    - `delta` - (default: .99) a reduction parameter TODO(kkl): come up with an intuitive description of the delta param
+
+    - ``basis`` -- a matrix representing a lattice basis
+
+    - ``delta`` -- (default: .99) a reduction parameter 
 
     OUTPUT:
+
     A LLL-reduced basis represented by a matrix
 
+    .. SEEALSO::
+    
+        :meth:`sage.matrix.matrix_dense.Matrix_dense.LLL`
+
     EXAMPLES:
-    ::
-        sage: B = Matrix(QQ, [[-2,0,2,0],[1/2,-1,0,0],[-1,0,-2,1/2],[-1,1,1,2]])
-        sage: LLL(B)
-        [ 1/2   -1    0    0]
-        [  -1    0   -2  1/2]
-        [-1/2    0    1    2]
-        [-3/2   -1    2    0]
-    ::
+
+        ::
+
+            sage: B = Matrix(QQ, [[-2,0,2,0],[1/2,-1,0,0],[-1,0,-2,1/2],[-1,1,1,2]])
+            sage: from mage import matrix_utils as mu
+            sage: mu.LLL(B)
+            [ 1/2   -1    0    0]
+            [  -1    0   -2  1/2]
+            [-1/2    0    1    2]
+            [-3/2   -1    2    0]
+
+        ::
+
+    .. TODO:: 
+
+        come up with an intuitive description of the ``delta`` param
+
     """
     assert delta > .25 and delta <= 1
     B = _copy(basis)
