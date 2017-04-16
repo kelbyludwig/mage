@@ -4,6 +4,38 @@ from sage.all import Mod as _Mod, randint as _randint
 class ECDSAKeyPair:
 
     def __init__(self, E, g, hashfunc=_hashlib.sha1):
+        """
+        Initializes a ECDSAKeyPair with the over the supplied parameters. 
+
+        INPUT:
+
+        - ``E`` -- An EllipticCurve defined over a finite field.
+    
+        - ``g`` -- A base element for the given curve.
+
+        - ``hashfunc`` -- (default: hashlib.sha1) a hashlib hash function used for message digests.
+
+        OUTPUT:
+
+        An ECDSAKeyPair that can be used to sign and verify signatures on messages.
+
+        EXAMPLES:
+
+        ::
+
+            sage: F = FiniteField(233970423115425145524320034830162017933)
+            sage: E = EllipticCurve(F, [-95051,11279326])
+            sage: g = E(182, 85518893674295321206118380980485522083)
+            sage: from mage import ecdsa
+            sage: kp = ecdsa.ECDSAKeyPair(E, g)
+            sage: mes = "mage rulez"
+            sage: r,s = kp.sign(mes)
+            sage: kp.verify(mes, r, s)
+            True
+
+        ::
+
+        """
         # setup curve and field
         self.E = E
         self.F = E.base_field()
@@ -18,6 +50,21 @@ class ECDSAKeyPair:
         self.H = hashfunc
 
     def sign(self, message, k=None):
+        """
+        Sign the supplied message using ECDSA.
+
+        INPUT:
+
+        - ``message`` -- a string representing the message to sign.
+
+        - ``k`` -- (default: None) if provided, the nonce used for the signature.
+
+        OUTPUT:
+        
+        A pair of numbers that represent the signature of the message.
+
+
+        """
         if k is None:
             k = _randint(1, self.N)
         r,_ = (k*self.G).xy(); r = _Mod(r, self.N) #sets r to the x coord of kG
@@ -29,8 +76,20 @@ class ECDSAKeyPair:
 
     def verify(self, message, r, s):
         """
-        Given a string and a signature (r,s), verify returns True if the
-        signature is valid and False otherwise.
+        Verifies an ECDSA signature using the supplied public key.
+
+        INPUT:
+
+        - ``message`` -- a string representing the message to sign.
+
+        - ``r`` -- one of the numbers that makes up the ECDSA signature.
+
+        - ``s`` -- one of the numbers that makes up the ECDSA signature.
+
+        OUTPUT:
+
+        True if the signature is valid and False otherwise.
+
         """
         assert r > 0 and r == _Mod(r, self.N)
         assert s > 0 and s == _Mod(s, self.N)
