@@ -96,11 +96,10 @@ def LLL(basis, delta=.99):
         for j in reversed(range(k)):
             if abs(mu(k, j)) > 1/2:
                 B[k] = B[k] - round(mu(k,j))*B[j]
-                Q = gram_schmidt(B)
+        Q = gram_schmidt(B)
         if (Q[k]*Q[k]) >= (delta - mu(k, k-1)**2) * (Q[k-1]*Q[k-1]):
             k += 1
         else:
             B[k], B[k-1] = B[k-1], B[k]
-            Q = gram_schmidt(B)
             k = max(k-1, 1)
     return B
