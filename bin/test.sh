@@ -8,4 +8,5 @@ sage mage/tests/matrix_utils_test.sage && \
 echo "running matrix utils doctests..." && \
 sage -t mage/matrix_utils.py && \
 echo "running vector utils doctests..." && \
-sage -t mage/vector_utils.py
+sage -t mage/vector_utils.py && \
+echo "=== TESTS COMPLETE! ==="
