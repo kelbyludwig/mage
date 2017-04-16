@@ -68,8 +68,7 @@ class ECDSAKeyPair:
         if k is None:
             k = _randint(1, self.N)
         r,_ = (k*self.G).xy(); r = _Mod(r, self.N) #sets r to the x coord of kG
-        hashstr = self.H(message).hexdigest()
-        hai = _Mod(int(hashstr, 16), self.N)
+        hai = self._message_hash_as_integer(message)
         kinv = _Mod(k, self.N)**-1
         s = ((hai + self.d * r) * kinv)
         return (r,s) 
@@ -93,8 +92,7 @@ class ECDSAKeyPair:
         """
         assert r > 0 and r == _Mod(r, self.N)
         assert s > 0 and s == _Mod(s, self.N)
-        hashstr = self.H(message).hexdigest()
-        hai = _Mod(int(hashstr, 16), self.N)
+        hai = self._message_hash_as_integer(message)
         w = _Mod(s, self.N)**-1
         u1 = hai * w
         u2 = r * w
@@ -102,3 +100,7 @@ class ECDSAKeyPair:
         P2 = int(u2)*self.Q 
         R,_ = (P1+P2).xy()
         return r == _Mod(R, self.N)
+
+    def _message_hash_as_integer(self, message):
+        hashstr = self.H(message).hexdigest()
+        return _Mod(int(hashstr, 16), self.N)
