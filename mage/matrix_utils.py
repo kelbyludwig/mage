@@ -138,6 +138,8 @@ def plot_2d_lattice(v1, v2, xmin=-10, xmax=10, ymin=-10, ymax=10, show_basis_vec
             sage: b2 = vector(ZZ, [4,5])
             sage: mu.plot_2d_lattice(b1,b2) # this will open a graphics viewer
             Graphics object consisting of 3 graphics primitives
+            sage: mu.plot_2d_lattice(b1,b2,show_basis_vectors=False)
+            Graphics object consisting of 1 graphics primitive
 
     ::
 
