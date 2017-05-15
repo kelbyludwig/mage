@@ -1,5 +1,17 @@
 import mage.vector_utils as _vu
-from sage.all import Matrix as _Matrix, copy as _copy, plot as _plot, points as _points
+from sage.all import Matrix as _Matrix, copy as _copy, plot as _plot, points as _points, copy as _copy
+
+def gauss_reduction(basis):
+    assert basis.nrows() == 2 
+    v1 = _copy(basis.row(0))
+    v2 = _copy(basis.row(1))
+    while True:
+        if v2.norm() < v2.norm():
+            v1,v2 = v2,v1
+        m = round((v1*v2)/(v1*v1))
+        if m == 0:
+            return _Matrix(basis.base_ring(), [v1,v2])
+        v2 = v2 - (m*v1)
 
 def gram_schmidt(basis):
     """
@@ -84,6 +96,22 @@ def LLL(basis, delta=.99):
     B = _copy(basis)
     Q = gram_schmidt(B)
     
+    # mu is a measure of the angle between B[i] (our input lattice basis)
+    # and Q[j] (our orthogonalized) basis.
+
+    # The Gram-Schmidt coefficient u = mu(i+1, i) measures the angle between Q[i]
+    # and B[i+1]; the angle is small iff u is close to 1, and it is large (i.e.
+    # almost orthogonal) iff u is close to 0. 
+
+    # Note this talks about the angle between the orthogonalized vector Q[i] 
+    # and the lattice vector B[i+1], but Q[i] is in turn forced to be 
+    # "quite close" to B[i], hence this also bounds the angle between the 
+    # lattice basis vectors depending on the orthogonalized vectors' lengths relative to each other.
+
+    # In short: The Lovasz condition is fulfilled if the vectors are close
+    # enough to being orthogonal, or if they are roughly ordered by length.
+    # Both of these properties lead to length reduction being quite effective.
+
     def mu(i, j):
         v = B[i]
         u = Q[j]
@@ -94,8 +122,10 @@ def LLL(basis, delta=.99):
 
     while k < n:
         for j in reversed(range(k)):
-            if abs(mu(k, j)) > 1/2:
-                B[k] = B[k] - round(mu(k,j))*B[j]
+            mukj = mu(k,j)
+            if abs(mukj) > 1/2: # if true: B[k] can be reasonably reduced by B[j] 
+                B[k] = B[k] - round(mukj)*B[j]
+
         Q = gram_schmidt(B)
         if (Q[k]*Q[k]) >= (delta - mu(k, k-1)**2) * (Q[k-1]*Q[k-1]):
             k += 1
