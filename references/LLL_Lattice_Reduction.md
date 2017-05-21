@@ -1,26 +1,36 @@
 # LLL Lattice Reduction
 
-## 0. Assumed / Required Background
+## 0. Suggested Background
 
-## 1. High-Level and Quick Motivational Example.
+I don't think LLL will make sense if you don't have a decent grasp on (at least):
 
-TODO(kkl): Use GGH Post Here.
+    * vector spaces and bases
+
+    * what a lattice is
+
+    * why lattice basis reduction is useful
+
+    * vector projections and the Gram-Schmidt process
+
+I wrote another blog post on lattices and how they can be used to form an
+asymmetric cryptosystem. [I think it would be a good thing to read
+first](https://kel.bz/post/lattices/) as it covers some of the suggested background.
 
 ## 2. Two Dimensional Reduction
 
 To get a sense of LLL it helps to consider the two-dimensional case. Suppose
 we have the following kinda crappy basis.
 
-```
+``` python
 sage: b1 = vector(ZZ, [30,40])
 sage: b2 = vector(ZZ, [40,50])
-sage: from mage import matrix_utils # https://github.com/kelbyludwig/mage
+sage: from mage import matrix_utils # https://github.com/kelbyludwig/mage; use the install.sh script to install
 sage: matrix_utils.plot_2d_lattice(b1, b2, xmin=-60, xmax=60, ymin=-60, ymax=60)
 ```
 
 Why is it crappy? Well, for one, the vectors are pretty long. They are also not
 orthogonal, which would be ideal (see my GGH post above for more intuitive
-details). Just from a visual inspection, there are clearly "better" bases for
+justification). Just from a visual inspection, there are clearly "better" bases for
 this lattice!
 
 A good first step in improving this hunk-o-junk basis is applying
@@ -30,7 +40,7 @@ the basis vectors into a set of (optionally normalized) orthogonal vectors.
 GS gets us closer to the basis we want, but GS is not guaranteed to produce
 orthogonal vectors that form a basis for our lattice. Check it:
 
-```
+``` python
 sage: b1 = vector(ZZ, [3,7])
 sage: b2 = vector(ZZ, [4,11])
 sage: B = Matrix(ZZ, [b1,b2])
@@ -46,7 +56,7 @@ can round the scalar produced during the projection and use a guaranteed
 integer scalar. Before, GS used vector projection code that would
 look something like this:
 
-```
+``` python
 def proj(u, v):
     zv = zero_vector(len(u))
     if u == zv:
@@ -56,7 +66,7 @@ def proj(u, v):
 
 Now, we can just modify the return statement to return:
 
-```
+``` python
 def proj_round(u, v):
     zv = zero_vector(len(u))
     if u == zv:
@@ -64,7 +74,77 @@ def proj_round(u, v):
     return round((v*u) / (u*u)) * u
 ```
 
-TODO(kkl): Show that the "new" "GS" is for sure produces lattice vectors because linear combs.
+Is the vector result of `proj_round` a lattice vector? Yarp. 
+`round((v*u) / (u*u))` is just a integer scalar of `u`. By the definition of a 
+lattice, if `u` is a lattice vector the value returned by `proj_round` is a 
+lattice vector.
 
-TODO(kkl): proj_round intuitively: u may be of the form u = u' + x*v. in other words, u can be
-compromised of some (shorter) vector u' and some multiple of v.
+http://img.pandawhale.com/126825-hot-fuzz-YARP-meme-Imgur-rory-U4l3.jpeg
+
+TODO(kkl): proj_round intuitively: u may be of the form `u = u' + x*v`. in other words, u can be
+a combination of some (shorter) vector u' and some multiple of v.
+
+# LLL Questions I Want to Answer
+
+* What is mu(i,j) measuring?
+
+    * mu(i,j) is the scalar projection of the ith lattice basis vector (`B[i]`) onto the jth gram-schmidt orthogonalized basis vector (`Q[j]`)
+
+    * mu(i,j) leverages the orthogonalized basis (which is unlikely to be a basis for the same lattice) as a guide-post.
+
+    * mu(i,j) provides a measurement of the angle formed by `B[i]` and the `Q[j]` 
+
+        * if mu(i,j) is close to 0 then the angle between the two vectors are almost orthogonal. as the angle between the two vectors grows close to 0 degrees or 180 degrees, the absolute value of mu(i,j) gets larger 
+
+        * TODO(kkl) differences in length can also affect things here since we are dealing with projections
+
+    * so if `mu(i,j)` suggests the ith lattice vector is that close to orthogonality with the jth GS vector, its probably the case that 
+
+    * by subtracting `round(mu(i,j))*jth_lattice_vector` from the ith lattice vector, we are removing all integral components of the jth lattice vector from the ith lattice vector. this result will be close to orthogonal (more on this in a second).
+
+* How can we guarantee that computing `B[i] = B[i] - round(mu(i,j))*B[j]` (where `B[i]` is the ith lattice basis vector) will make `B[i]` "close" to orthogonal to `B[j]`?
+
+    * The rounded scalar projection `round(mu(i,j))` (or in other words, the rounded scalar projection of `B[i]` onto `B[j]`) will always result in a vector that lies between `-1/2*B[j]` and `1/2*B[j]`.
+
+    * Why is that true? I didn't get this so [I asked StackOverflow :)](https://crypto.stackexchange.com/questions/46960/what-is-the-significance-of-the-value-1-2-within-the-first-property-of-a-lll-r). TODO(kkl) I did the algebra somewhere. Find those notes.
+
+    * Why is that relevant to "almost" orthogonality? [This is why](http://mathinsight.org/media/image/image/dot_product_projection.png). If the scalar projection of `B[i]` onto `B[j]` is between `-1/2` and `1/2`, then the cosine of the angle between the two vectors is between 60 and 120 degrees (i.e. 90 degrees +/- 30)
+
+        ```
+        # just a quick demo of this property if you are bad at trig like me :)
+        def cos_deg(deg):
+            return cos(deg / 360 * (2*pi))
+   
+        for x in range(0, 180, 10):
+            print("cos_deg(%d) = %.2f" % (x, cos_deg(x)))
+        ```
+
+* What does it mean when `abs(mu(i,j))` is greater than .5?
+
+    * It means that we have at least one integral component of `B[j]` that we can remove from `B[i]`
+
+* What does the first inner loop (length reduction step) accomplish in LLL?
+
+    * TODO(kkl): Include some LLL pseduocode
+
+    * Starting from `j = k-1` and decrementing towards `j = 0`, `mu(k,j)` is computed
+
+        * e.g. suppose k = 3; then the loop computes `mu(3,2); mu(3,1); mu(3,0)` at each iteration
+
+    * For each `mu(k,j)` computation, it is checked if `B[k]` can be reduced using `Q` as a guide-post
+
+    * At the end of this loop `B[k]` is (probably) quite a bit shorter, since all integral components of `B[0:k-1]` have been removed.
+
+    * `B[k]` is also pretty close to orthogonal to `B[0:k-1]`. This process is kinda like fuzzy Gram-Schmidt.
+
+* What is the significance of the Lovasz condition?
+
+    * LLL is dealing with *ordered* bases. While the length reduction step will (probably) shorten basis vectors, the ordering of the basis could affect results.
+
+    * For example, [this StackOverflow post](https://crypto.stackexchange.com/questions/39532/why-is-the-lov%C3%A1sz-condition-used-in-the-lll-algorithm?rq=1) gives an example of a basis whose order negatively affects the quality of the reduction.
+
+    * TODO(kkl) I don't have a great intuitive explanation for why the Lovasz condition works.
+
+* Is LLL guaranteed to terminate?
+
+    * [3.2](https://ocw.mit.edu/courses/mathematics/18-409-topics-in-theoretical-computer-science-an-algorithmists-toolkit-fall-2009/lecture-notes/MIT18_409F09_scribe20.pdf)

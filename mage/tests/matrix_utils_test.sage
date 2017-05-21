@@ -36,19 +36,21 @@ class TestMatrixUtils(unittest.TestCase):
         re = matrix_utils.LLL(B) 
         assert re == B.LLL()
 
-    #    bad = 0
-    #    for _ in range(200):
-    #        n = randint(1,10)
-    #        A = random_matrix(QQ, n, n)
-    #        d = .25 + (random() * .74)
-    #        ex = A.LLL(delta=d)
-    #        try:
-    #            re = matrix_utils.LLL(A, delta=d)
-    #        except ZeroDivisionError as e:
-    #            continue
-    #        if ex != re:
-    #            bad += 1 
-    #    assert bad < 10
+        bad = 0
+        for _ in range(500):
+            n = randint(1,10)
+            A = random_matrix(QQ, n, n)
+            #d = .25 + (random() * .74)
+            d = .99
+            ex = A.LLL(delta=d)
+            try:
+                re = matrix_utils.LLL(A, delta=d)
+            except ZeroDivisionError as e:
+                continue
+            if ex != re:
+                bad += 1 
+        print(bad)
+        assert bad < 30
 
 
 if __name__ == "__main__":

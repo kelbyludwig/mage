@@ -44,7 +44,6 @@ def gram_schmidt(basis, ks=None, oQ=None):
     Q = []
 
     if ks is not None and oQ is not None:
-        print("skipping %d gs rows" % ks)
         Q = oQ.rows()[:ks]
     else:
         ks = 0 
@@ -107,29 +106,22 @@ def LLL(basis, delta=.99):
 
     while k < n:
         ks = None
-        print("begin length reduction loop")
         for j in reversed(range(k)):
             mukj = mu(k,j)
             if abs(mukj) > .5:
                 B[k] = B[k] - mukj.round()*B[j]
                 ks = k if ks is None else ks
-        print("end length reduction loop")
 
         if ks is not None:
-            print("begin orthogonalizing post length reduction")
             Q = gram_schmidt(B, ks, Q)
-            print("end orthogonalizing post length reduction")
 
         Qk, Qk1 = Q[k], Q[k-1]
         if Qk*Qk >= (delta - mu(k, k-1)**2) * (Qk1*Qk1):
             k += 1
-            print("incr new k %d" % k)
         else:
             B[k], B[k-1] = B[k-1], B[k]
-            print("swapping k %d" % k)
             Q = gram_schmidt(B, k-1, Q)
             k = max(k-1, 1)
-            print("swap new k %d" % k)
     return B
 
 
