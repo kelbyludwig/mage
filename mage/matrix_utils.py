@@ -43,6 +43,7 @@ def gram_schmidt(basis, ks=None, oQ=None):
     Q = []
 
     if ks is not None and oQ is not None:
+        #print("skipping %d gs rows" % ks)
         Q = oQ.rows()[:ks]
     else:
         ks = 0 
@@ -103,18 +104,22 @@ def LLL(basis, delta=.99):
     k = 1
 
     while k < n:
+        ks = None
         for j in reversed(range(k)):
             mukj = mu(k,j)
             if abs(mukj) > .5:
                 B[k] = B[k] - round(mukj)*B[j]
-                Q = gram_schmidt(B, k, Q)
+                ks = k if ks is None else ks
+
+        if ks is not None:
+            Q = gram_schmidt(B, ks, Q)
 
         Qk, Qk1 = Q[k], Q[k-1]
         if Qk*Qk >= (delta - mu(k, k-1)**2) * (Qk1*Qk1):
             k += 1
         else:
             B[k], B[k-1] = B[k-1], B[k]
-            Q = gram_schmidt(B)
+            Q = gram_schmidt(B, k-1, Q)
             k = max(k-1, 1)
     return B
 
