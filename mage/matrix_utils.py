@@ -1,4 +1,5 @@
 import mage.vector_utils as _vu
+import time
 from sage.all import Matrix as _Matrix, copy as _copy, plot as _plot, points as _points, QQ as _QQ
 
 def gram_schmidt(basis, ks=None, oQ=None):
@@ -43,7 +44,7 @@ def gram_schmidt(basis, ks=None, oQ=None):
     Q = []
 
     if ks is not None and oQ is not None:
-        #print("skipping %d gs rows" % ks)
+        print("skipping %d gs rows" % ks)
         Q = oQ.rows()[:ks]
     else:
         ks = 0 
@@ -91,36 +92,44 @@ def LLL(basis, delta=.99):
         come up with an intuitive description of the ``delta`` param
 
     """
+    delta = _QQ(delta)
     assert delta > .25 and delta <= 1
     B = _copy(basis)
     Q = gram_schmidt(B)
-    
+
     def mu(i, j):
         v = B[i]
         u = Q[j]
-        return (v*u) / (u*u)
+        return _QQ(v*u) / _QQ(u*u)
     
     n = B.nrows()
     k = 1
 
     while k < n:
         ks = None
+        print("begin length reduction loop")
         for j in reversed(range(k)):
             mukj = mu(k,j)
             if abs(mukj) > .5:
-                B[k] = B[k] - round(mukj)*B[j]
+                B[k] = B[k] - mukj.round()*B[j]
                 ks = k if ks is None else ks
+        print("end length reduction loop")
 
         if ks is not None:
+            print("begin orthogonalizing post length reduction")
             Q = gram_schmidt(B, ks, Q)
+            print("end orthogonalizing post length reduction")
 
         Qk, Qk1 = Q[k], Q[k-1]
         if Qk*Qk >= (delta - mu(k, k-1)**2) * (Qk1*Qk1):
             k += 1
+            print("incr new k %d" % k)
         else:
             B[k], B[k-1] = B[k-1], B[k]
+            print("swapping k %d" % k)
             Q = gram_schmidt(B, k-1, Q)
             k = max(k-1, 1)
+            print("swap new k %d" % k)
     return B
 
 
