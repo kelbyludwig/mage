@@ -3,9 +3,10 @@
 #### installation
 
 ```
-./bin/install.sh
-#follow instructions
-sage
+$ cd mage
+$ ./bin/install.sh
+$ #follow instructions
+$ sage
 sage: from mage import matrix_utils
 sage: # have fun
 ```
@@ -13,5 +14,7 @@ sage: # have fun
 #### testing
 
 ```
-./bin/tests.sh
+$ cd mage
+$ ./bin/tests.sh
+$ #plz no failures 
 ```
