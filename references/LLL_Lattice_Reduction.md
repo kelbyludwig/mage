@@ -109,6 +109,41 @@ same space), but both leverage vector projections as a way to remove redundancy
 from a basis. Much more than that, LLL uses Gram-Schmidt as a sub-routine to
 assist in determining what to do.
 
+## 3. Enter LLL
+
+Alright, lets start looking at LLL itself. Here is some python pseduocode repurposed from [wikipedia](https://en.wikipedia.org/wiki/Lenstra%E2%80%93Lenstra%E2%80%93Lov%C3%A1sz_lattice_basis_reduction_algorithm):
+
+``` python
+def LLL(B, delta):
+    Q = gram_schmidt(B)
+
+    def mu(i,j):
+        v = B[i]
+        u = Q[j]
+        return (v*u) / (u*u)   
+
+    n, k = B.nrows(), 1
+    while k < n:
+
+        # length reduction step
+        for j in reversed(range(k)):
+            if abs(mu(k,j)) > .5:
+                B[k] = B[k] - round(mu(k,j))*B[j]
+                Q = gram_schmidt(B)
+
+        # Lovasz condition step
+        if Q[k]*Q[k] >= (delta - mu(k,k-1)**2)*(Q[k-1]*Q[k-1]):
+            k = k + 1
+        else:
+            B[k], B[k-1] = B[k-1], B[k]
+            Q = gram_schmidt(B)
+            k = max(k-1, 1)
+
+   return B 
+```
+
+LLL is concise, but there is definitely some seemingly magical logic at first glance. Let's start with the 
+
 
 # LLL Questions I Want to Answer
 
