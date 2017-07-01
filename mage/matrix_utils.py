@@ -1,7 +1,8 @@
 import mage.vector_utils as _vu
-from sage.all import Matrix as _Matrix, copy as _copy, plot as _plot, points as _points
+import time
+from sage.all import Matrix as _Matrix, copy as _copy, plot as _plot, points as _points, QQ as _QQ
 
-def gram_schmidt(basis):
+def gram_schmidt(basis, ks=None, oQ=None):
     """
     gram_schmidt takes an basis as input and returns an orthonogonal basis
     which spans the same subspace. 
@@ -9,6 +10,10 @@ def gram_schmidt(basis):
     INPUT:
 
     - ``basis`` -- a matrix representing a lattice basis.
+
+    - ``ks`` -- (default: None) an index to allow for partial orthogonalization starting from the ``ks``th row. this could increase the efficiency of gram_schmidt if the first ``ks``-1 vectors were not modified since the last gram_schmidt computation.
+    
+    - ``oQ`` -- (default: None) the original orthogonalized matrix if computing a partial gram_schmidt.
 
     OUTPUT:
 
@@ -37,8 +42,14 @@ def gram_schmidt(basis):
 
     """
     Q = []
-    for i, v in enumerate(basis):
-        Q.append(v - sum(_vu.proj(u,v) for u in Q[:i]))
+
+    if ks is not None and oQ is not None:
+        Q = oQ.rows()[:ks]
+    else:
+        ks = 0 
+    
+    for i, v in enumerate(basis[ks:]):
+        Q.append(v - sum(_vu.proj(u,v) for u in Q[:i+ks]))
     return _Matrix(basis.base_ring(), Q)
 
 
@@ -80,27 +91,36 @@ def LLL(basis, delta=.99):
         come up with an intuitive description of the ``delta`` param
 
     """
+    delta = _QQ(delta)
     assert delta > .25 and delta <= 1
     B = _copy(basis)
     Q = gram_schmidt(B)
-    
+
     def mu(i, j):
         v = B[i]
         u = Q[j]
-        return (v*u) / (u*u)
+        return _QQ(v*u) / _QQ(u*u)
     
     n = B.nrows()
     k = 1
 
     while k < n:
+        ks = None
         for j in reversed(range(k)):
-            if abs(mu(k, j)) > 1/2:
-                B[k] = B[k] - round(mu(k,j))*B[j]
-        Q = gram_schmidt(B)
-        if (Q[k]*Q[k]) >= (delta - mu(k, k-1)**2) * (Q[k-1]*Q[k-1]):
+            mukj = mu(k,j)
+            if abs(mukj) > .5:
+                B[k] = B[k] - mukj.round()*B[j]
+                ks = k if ks is None else ks
+
+        if ks is not None:
+            Q = gram_schmidt(B, ks, Q)
+
+        Qk, Qk1 = Q[k], Q[k-1]
+        if Qk*Qk >= (delta - mu(k, k-1)**2) * (Qk1*Qk1):
             k += 1
         else:
             B[k], B[k-1] = B[k-1], B[k]
+            Q = gram_schmidt(B, k-1, Q)
             k = max(k-1, 1)
     return B
 
