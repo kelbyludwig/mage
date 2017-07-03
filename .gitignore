@@ -4,4 +4,4 @@
 *.swp
 /dist/
 /*.egg-info
-*.py
+*.sage.py
