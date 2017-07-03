@@ -2,7 +2,7 @@ class GF():
     
     def __init__(self, n, modulus=None):
         """
-        Return a instance of a element of a Galois Field.
+        Return a instance of a element of a binary Galois Field.
         NOTE: This is kinda an akward interface as it implicitly creates a
         finite field but returns a element of the field.
 
@@ -13,11 +13,26 @@ class GF():
 
         OUTPUT:
         
-        A finite field element.
+        A binary finite field element.
+
+        EXAMPLES:
+
+        ::
+            sage: from mage import finite_field as mf
+            sage: a = mf.GF(0b10101, 0b100011011)
+            sage: b = mf.GF(0b1011, 0b100011011)
+            sage: a+b,b+a,b-a,a-b
+            (30, 30, 30, 30)
+            sage: c = mf.GF(0x53, 0x11B)
+            sage: d = mf.GF(0xCA, 0x11B)
+            sage: c*d,c*d
+            (1, 1)
+
+        ::
 
         """
         if modulus is not None:
-            _, nr  = GF._divmod(n, modulus)
+            _, nr  = GF._divmod(n, int(modulus))
             if n != nr:
                 raise Exception("non-reducing integer used")
             self.n = nr
@@ -28,12 +43,40 @@ class GF():
 
     @staticmethod
     def _divmod(a, b):
+        """
+        Returns the quotient and remainder of a / b
+
+        INPUT:
+
+        - ``a`` -- the numerator 
+
+        - ``b`` -- the denominator
+
+        OUTPUT:
+
+        Returns the quotient and remainder as a pair.
+
+        EXAMPLES:
+
+        ::
+
+            sage: from mage import finite_field as mf
+            sage: m = 0b100011011
+            sage: a = 0b11111110000100
+            sage: mf.GF._divmod(a, m)
+            (61, 251)
+
+        ::
+
+        """
         q, r = 0, a
         rd, bd = GF._deg(r), GF._deg(b)
         while rd >= bd:
             d = rd - bd
             q = q ^ (1 << d)
             r = r ^ (b << d)
+
+            rd = GF._deg(r)
         return q, r
 
     def deg(self):
@@ -77,7 +120,16 @@ class GF():
             deg += 1
         return deg-1
 
+    def __repr__(self):
+        return str(self.n)
+
+    def __trunc__(self):
+        return self.n
+
     def __eq__(self, x):
+        if type(self) != type(x):
+            return False
+
         if self.m is None and x.m is None:
             return self.n == x.n
         
@@ -89,38 +141,36 @@ class GF():
         else:
             return False
 
-    def __and__(self, x):
-        return GF(self.n & x, self.m)
-
     def __xor__(self, x):
-        return GF(self.n ^ x.n, self.m)
+        nx = GF(self.n ^ x.n) 
+        nx.m = self.m
+        return nx
 
-    def __rshift__(self, b):
-        return GF(self.n >> b, self.m)
+    def __rshift__(self, x):
+        nx = GF(self.n >> x) 
+        nx.m = self.m
+        return nx
 
-    def __lshift__(self, b):
-        return GF(self.n << b, self.m)
+    def __lshift__(self, x):
+        nx = GF(self.n << x)
+        nx.m = self.m
+        return nx
 
-    def __add__(self, x):
-        return self ^ x
+    __add__  = __xor__
+    __sub__  = __xor__
 
-    __sub__ = __add__
-    __radd__ = __add__
-
-    def __mul__(self, x):
-        a, b, m, p = self, x, self.m, zero
+    def __mul__(a, b):
+        m, p = a.m, GF(0)
         
-        while a > 0:
-            if a & 1 == one:
+        while a.n > 0:
+            if a.n & 1:
                 p = p ^ b
             a = a >> 1
             b = b << 1
             if b.deg() == m.deg():
-                b = b ^ m         #"subtract" the most signficant bit
+                b = b ^ m #"subtract" the most signficant bit
         return p
     
-    __rmul__ = __mul__
-
     def modinv(self):
         a, p = self.n, self.m
         one, zero = GF(1, self.m), GF(0, self.m)
