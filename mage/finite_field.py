@@ -1,15 +1,25 @@
 class GF():
+    """
+    Returns a finite field defined by a irreducible polynomial.
+    """
+
+    def __init__(self, modulus):
+        self.modulus = modulus
+        self.elem = lambda x: GFElem(x, self)
+
+    def __eq__(a,b):
+        return a.modulus == b.modulus
+
+class GFElem():
     
-    def __init__(self, n, modulus=None):
+    def __init__(self, n, field):
         """
-        Return a instance of a element of a binary Galois Field.
-        NOTE: This is kinda an akward interface as it implicitly creates a
-        finite field but returns a element of the field.
+        Return a instance of a element of a binary finite field.
 
         INPUT:
         - ``n`` -- the element in field represented by an integer
 
-        - ``modulus`` -- the monic irreducible polynomial modulus represented by an integer
+        - ``field`` -- a GF instance that this element belongs to
 
         OUTPUT:
         
@@ -18,28 +28,25 @@ class GF():
         EXAMPLES:
 
         ::
+
             sage: from mage import finite_field as mf
-            sage: a = mf.GF(0b10101, 0b100011011)
-            sage: b = mf.GF(0b1011, 0b100011011)
+            sage: G = mf.GF(0b101010101010101)
+            sage: a = G.elem(0b10101)
+            sage: b = G.elem(0b100011011)
             sage: a+b,b+a,b-a,a-b
-            (30, 30, 30, 30)
-            sage: c = mf.GF(0x53, 0x11B)
-            sage: d = mf.GF(0xCA, 0x11B)
+            (270, 270, 270, 270)
+            sage: H = mf.GF(0x11B)
+            sage: c = H.elem(0x53)
+            sage: d = H.elem(0xCA)
             sage: c*d,c*d
             (1, 1)
 
         ::
 
         """
-        if modulus is not None:
-            _, nr  = GF._divmod(n, int(modulus))
-            if n != nr:
-                raise Exception("non-reducing integer used")
-            self.n = nr
-            self.m = GF(modulus)
-        else:
-            self.n = n
-            self.m = None
+        _, nr  = GFElem._divmod(n, field.modulus)
+        self.n = nr
+        self.field = field
 
     @staticmethod
     def _divmod(a, b):
@@ -63,20 +70,19 @@ class GF():
             sage: from mage import finite_field as mf
             sage: m = 0b100011011
             sage: a = 0b11111110000100
-            sage: mf.GF._divmod(a, m)
+            sage: mf.GFElem._divmod(a, m)
             (61, 251)
 
         ::
 
         """
         q, r = 0, a
-        rd, bd = GF._deg(r), GF._deg(b)
+        rd, bd = GFElem._deg(r), GFElem._deg(b)
         while rd >= bd:
             d = rd - bd
             q = q ^ (1 << d)
             r = r ^ (b << d)
-
-            rd = GF._deg(r)
+            rd = GFElem._deg(r)
         return q, r
 
     def deg(self):
@@ -93,19 +99,20 @@ class GF():
         ::
 
             sage: from mage import finite_field as mf
-            sage: a = mf.GF(0b10011, 0b100011011)
+            sage: G = mf.GF(0b100011011)
+            sage: a = G.elem(0b10011)
             sage: a.deg() 
             4
-            sage: mf.GF(0b1, 0b100011011).deg()
+            sage: G.elem(0b1).deg()
             0
-            sage: mf.GF(0b0, 0b100011011).deg()
+            sage: G.elem(0b0).deg()
             -1
 
         ::
 
         """
 
-        return GF._deg(self.n)
+        return GFElem._deg(self.n)
 
     @staticmethod
     def _deg(n):
@@ -126,72 +133,53 @@ class GF():
     def __trunc__(self):
         return self.n
 
-    def __eq__(self, x):
-        if type(self) != type(x):
+    def __eq__(a, b):
+        if type(a) != type(b):
             return False
 
-        if self.m is None and x.m is None:
-            return self.n == x.n
-        
-        if self.m != x.m:
+        if a.field != b.field:
             raise Exception("different field moduli")
 
-        if self.n == self.x:
-            return True
-        else:
-            return False
+        return a.n == b.n
 
-    def __xor__(self, x):
-        nx = GF(self.n ^ x.n) 
-        nx.m = self.m
-        return nx
+    def __xor__(a, b):
+        return a.field.elem(a.n ^ b.n) 
 
-    def __rshift__(self, x):
-        nx = GF(self.n >> x) 
-        nx.m = self.m
-        return nx
+    def __rshift__(a, b):
+        return a.field.elem(a.n >> b)
 
-    def __lshift__(self, x):
-        nx = GF(self.n << x)
-        nx.m = self.m
-        return nx
+    def __lshift__(a, b):
+        return a.field.elem(a.n << b)
 
     __add__  = __xor__
     __sub__  = __xor__
 
     def __mul__(a, b):
-        m, p = a.m, GF(0)
+        assert a.field == b.field
+        m, p = a.field.modulus, b.field.elem(0)
         
         while a.n > 0:
             if a.n & 1:
                 p = p ^ b
             a = a >> 1
             b = b << 1
-            if b.deg() == m.deg():
+            if b.deg() == GFElem._deg(m):
                 b = b ^ m #"subtract" the most signficant bit
         return p
     
     def modinv(self):
-        a, p = self.n, self.m
-        one, zero = GF(1, self.m), GF(0, self.m)
-        t, r, newt, newr = zero, p, one, a
+        p = self.field.m
+        one, zero = GF(1, p), GF(0, p)
+        t, r, newt, newr = zero, p, one, self
         
-        def ps(x):
-            print("x:   %s" % x)
-            print("x.n: %s" % x.n)
-            return format(x.n, '08b')
-        print("(step, r, newr) = (pre, %s, %s)" % (ps(r), ps(newr)))
-        print("(step, t, newt) = (pre, %s, %s)" % (ps(t), ps(newt)))
+        ps = lambda x: format(int(x), '08b')
+
         step = 1 
         while newr != zero:
-            q, _ = r.divmod(newr) 
-            r, newr = newr, r - q*newr 
-            t, newt = newt, t - q*newt
-            print("(step, r, newr) = (%d, %s, %s)" % (step, ps(r.n), ps(newr.n)))
-            print("(step, t, newt) = (%d, %s, %s)" % (step, ps(t.n), ps(newt.n)))
+            q, _ = GFElem._divmod(r.n, newr.n) 
+            r, newr = newr, r.n - q*newr.n
+            t, newt = newt, t.n - q*newt.n
             step += 1
         
         if r.deg() > 0:
             raise Exception("common factors")
-        print("(step, r, t) = (fin, %s, %s)" % (ps(r.n), ps(t.n)))
-
