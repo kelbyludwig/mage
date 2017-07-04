@@ -85,7 +85,7 @@ class GFElem():
         ::
 
         """
-        if not isinstance(a, _RInteger) and not isinstance(a, _Integer) and not isinstance(a, int): 
+        if not isinstance(a, _RInteger) and not isinstance(a, _Integer) and not isinstance(a, int) and not isinstance(a, long): 
             raise Exception("divmod does not accept %s as input" % type(a))
         if a == 0:
             return 0, 0
@@ -197,7 +197,7 @@ class GFElem():
             a = a >> 1
             b = b << 1
             if b.deg() == m.deg():
-                b = b ^ m #"subtract" the most signficant bit
+                b = b ^ m
         return p
     
     def inverse(self):

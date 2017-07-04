@@ -1,4 +1,8 @@
 #!/bin/bash
+echo "running finite field doctests..." && \
+sage -t mage/finite_field.py && \
+echo "running gcm tests..." && \
+sage mage/tests/gcm_test.sage && \
 echo "running ecdsa tests..."
 sage mage/tests/ecdsa_test.sage && \
 echo "running ecdsa doctests..." && \
