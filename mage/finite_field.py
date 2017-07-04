@@ -1,3 +1,6 @@
+from sage.all import Integer as _Integer
+from sage.rings.integer import Integer as _RInteger
+
 class GF():
     """
     Returns a finite field defined by a irreducible polynomial.
@@ -46,7 +49,11 @@ class GFElem():
         ::
 
         """
+        #print("init")
         _, nr  = GFElem._divmod(n, field.modulus)
+        #print("init done")
+        #if n > field.modulus:
+        #    raise Exception("non-reduced value supplied")
         self.n = nr
         self.field = field
 
@@ -80,6 +87,8 @@ class GFElem():
         ::
 
         """
+        if not isinstance(a, _RInteger) and not isinstance(a, _Integer) and not isinstance(a, int): 
+            raise Exception("divmod does not accept %s as input" % type(a))
         if a == 0:
             return 0, 0
         if b == 0:
@@ -87,6 +96,7 @@ class GFElem():
 
         q, r = 0, a
         #print("(r, b) = (%s, %s)" % (r, b))
+        #print("(tr, tb) = (%s, %s)" % (type(r), type(b)))
         rd, bd = GFElem._deg(r), GFElem._deg(b)
         #print("(rd, bd) = (%d, %d)" % (rd, bd))
         while rd >= bd:
@@ -165,23 +175,23 @@ class GFElem():
     __add__  = __xor__
     __sub__  = __xor__
 
-    def __div__(a, b):
-        q, _ = GFElem._divmod(a, b)
-        return a.field.elem(q)
+    #def __div__(a, b):
+    #    q, _ = GFElem._divmod(a, b)
+    #    return a.field.elem(q)
 
-    def __mod__(a, b):
-        _, r = GFElem._divmod(a, b)
-        return a.field.elem(r)
+    #def __mod__(a, b):
+    #    _, r = GFElem._divmod(a, b)
+    #    return a.field.elem(r)
 
     def __mul__(a, b):
-        m, p = a.field.modulus, b.field.elem(0)
+        m, p = a.field.modelem, b.field.elem(0)
         
         while a.n > 0:
             if a.n & 1:
                 p = p ^ b
             a = a >> 1
             b = b << 1
-            if b.deg() == GFElem._deg(m):
+            if b.deg() == m.deg():
                 b = b ^ m #"subtract" the most signficant bit
         return p
     
@@ -209,14 +219,15 @@ class GFElem():
 
         t, newt, r, newr = 0, 1, self.field.modelem, self
         while newr != 0:
-            print(1)
-            quotient = r / newr
-            print(2)
+            #print(1)
+            #import pdb; pdb.set_trace()
+            quotient, _ = GFElem._divmod(r, newr)
+            #print(2)
             t, newt = newt, t - quotient * newt
-            print(3)
+            #print(3)
             r, newr = newr, r - quotient * newr
-            print(4)
-        print(5)
+            #print(4)
+        #print(5)
         if GFElem._deg(r) > 0: raise Exception("not invertible")
-        print(6)
+        #print(6)
         return (1/r) * t
