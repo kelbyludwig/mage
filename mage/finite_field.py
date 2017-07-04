@@ -5,6 +5,8 @@ class GF():
 
     def __init__(self, modulus):
         self.modulus = modulus
+        self.modelem = GFElem(modulus, self)
+        self.modelem.n = modulus
         self.elem = lambda x: GFElem(x, self)
 
     def __eq__(a,b):
@@ -72,12 +74,21 @@ class GFElem():
             sage: a = 0b11111110000100
             sage: mf.GFElem._divmod(a, m)
             (61, 251)
+            sage: mf.GFElem._divmod(0, m)
+            (0, 0)
 
         ::
 
         """
+        if a == 0:
+            return 0, 0
+        if b == 0:
+            raise Exception("divmod by zero")
+
         q, r = 0, a
+        #print("(r, b) = (%s, %s)" % (r, b))
         rd, bd = GFElem._deg(r), GFElem._deg(b)
+        #print("(rd, bd) = (%d, %d)" % (rd, bd))
         while rd >= bd:
             d = rd - bd
             q = q ^ (1 << d)
@@ -154,8 +165,15 @@ class GFElem():
     __add__  = __xor__
     __sub__  = __xor__
 
+    def __div__(a, b):
+        q, _ = GFElem._divmod(a, b)
+        return a.field.elem(q)
+
+    def __mod__(a, b):
+        _, r = GFElem._divmod(a, b)
+        return a.field.elem(r)
+
     def __mul__(a, b):
-        assert a.field == b.field
         m, p = a.field.modulus, b.field.elem(0)
         
         while a.n > 0:
@@ -167,19 +185,38 @@ class GFElem():
                 b = b ^ m #"subtract" the most signficant bit
         return p
     
-    def modinv(self):
-        p = self.field.m
-        one, zero = GF(1, p), GF(0, p)
-        t, r, newt, newr = zero, p, one, self
-        
-        ps = lambda x: format(int(x), '08b')
+    def inverse(self):
+        """
+        Returns the inverse of the field element.
 
-        step = 1 
-        while newr != zero:
-            q, _ = GFElem._divmod(r.n, newr.n) 
-            r, newr = newr, r.n - q*newr.n
-            t, newt = newt, t.n - q*newt.n
-            step += 1
+        OUTPUT:
         
-        if r.deg() > 0:
-            raise Exception("common factors")
+        The inverse of the element.
+
+        EXAMPLES:
+
+        ::
+
+            sage: from mage import finite_field as mf
+            sage: G = mf.GF(0b100011011)
+            sage: a = G.elem(0b1010011)
+            sage: # a.inverse(); 202
+            sage: # a.inverse()*a; 1
+
+        ::
+
+        """
+
+        t, newt, r, newr = 0, 1, self.field.modelem, self
+        while newr != 0:
+            print(1)
+            quotient = r / newr
+            print(2)
+            t, newt = newt, t - quotient * newt
+            print(3)
+            r, newr = newr, r - quotient * newr
+            print(4)
+        print(5)
+        if GFElem._deg(r) > 0: raise Exception("not invertible")
+        print(6)
+        return (1/r) * t
