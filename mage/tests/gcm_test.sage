@@ -12,5 +12,14 @@ class TestGCM(unittest.TestCase):
         assert C._bspad(i2) == r2
         assert C._bspad(i3) == r3
 
+    def test_elem_unelem(self):
+        C = g.GCM("yellow submarine") 
+        ins = ["\x00"*15+"\x01", "\x00"*7+"\x01"+"\x00"*7+"\x01"]
+        for i in ins:
+            e = C._elem(i)
+            r = C._unelem(e)
+            assert r == i
+
+
 if __name__ == "__main__":
     unittest.main()
