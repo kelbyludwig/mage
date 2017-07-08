@@ -1,4 +1,5 @@
 import struct
+import binascii
 import mage.finite_field as _ff
 from Crypto.Cipher import AES
 
@@ -8,8 +9,8 @@ class GCM():
         assert len(key) == 16
         self.cipher = AES.AESCipher(key)
         self.field  = _ff.GF(0xE1000000000000000000000000000000)
-        hash_key = self._encrypt('\x00'*self.cipher.block_size)
-        self.he = self._elem(hash_key)
+        self.hash_key = self._encrypt('\x00'*self.cipher.block_size)
+        self.he = self._elem(self.hash_key)
     
     def _elem(self, bytes):
         #TODO(kkl): Not sure of endianness
@@ -39,21 +40,24 @@ class GCM():
     def _encrypt(self, pt):
         return self.cipher.encrypt(pt)
 
-    def _ghash(bs):
-        assert len(bs) % 16 == 0
-        g = self.field.elem(0)
-        for b in bs:
-            g = g + self.field.elem(b)
-            g = g * self.he
-        return 
-
-    def _gmac(pt, ad):
-        pass
-
-    def seal(iv, pt, ad):
+    def _prep_input(self, pt, ad):
         ptp = self._bspad(pt)
         adp = self._bspad(ad)
         bitlen = lambda x: struct.pack(">Q", len(x)*8)
+        return adp + ptp + bitlen(ad) + bitlen(pt)
+
+    def _ghash(self, bs):
+        assert len(bs) % 16 == 0
+        g = self.field.elem(0)
+        for i in range(len(bs)/16):
+            be = self._elem(bs[16*i:(i+1)*16])
+            print("g %s be %s" % (g, binascii.hexlify(bs[16*i:(i+1)*16])))
+            g = g + be
+            g = g * self.he
+        return self._unelem(g)
+
+    def seal(iv, pt, ad):
+        bs = self._prep_input(pt, ad)
         pass
 
     def unseal(iv, ct, tag):

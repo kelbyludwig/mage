@@ -20,6 +20,17 @@ class TestGCM(unittest.TestCase):
             r = C._unelem(e)
             assert r == i
 
+    def test_gcm_vector(self): 
+        print("\n")
+        k = "\x00" * 16
+        C = g.GCM(k)
+        assert C.hash_key == "\x66\xe9\x4b\xd4\xef\x8a\x2c\x3b\x88\x4c\xfa\x59\xca\x34\x2b\x2e"
+        pt = "\x00" * 16
+        obs = C._prep_input(pt, "")
+        import binascii
+        print("obs %s" % binascii.hexlify(obs))
+        gbs = C._ghash(obs)
+        print("gbs %s" % binascii.hexlify(gbs))
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,19 +40,20 @@ class GFElem():
             sage: b = G.elem(0b100011011)
             sage: a+b,b+a,b-a,a-b
             (270, 270, 270, 270)
-            sage: H = mf.GF(0x11B)
-            sage: c = H.elem(0x53)
-            sage: d = H.elem(0xCA)
-            sage: c*d,c*d
-            (1, 1)
+            sage: H = mf.GF(0xE1000000000000000000000000000000)
+            sage: c = H.elem(0x5e2ec746917062882c85b0685353de37)
+            sage: d = H.elem(0x66e94bd4ef8a2c3b884cfa59ca342b2e)
+            sage: c*d
+            323733119472864005843474405660461955205
 
         ::
 
         """
-        _, nr  = GFElem._divmod(n, field.modulus)
+        #_, nr  = GFElem._divmod(n, field.modulus)
         #if n > field.modulus:
         #    raise Exception("non-reduced value supplied")
-        self.n = nr
+        #self.n = nr
+        self.n = n
         self.field = field
 
     @staticmethod
@@ -189,16 +190,18 @@ class GFElem():
         return a.field.elem(r)
 
     def __mul__(a, b):
-        m, p = a.field.modelem, b.field.elem(0)
-        
-        while a.n > 0:
-            if a.n & 1:
-                p = p ^ b
-            a = a >> 1
-            b = b << 1
-            if b.deg() == m.deg():
-                b = b ^ m
-        return p
+        assert a.field == b.field
+        assert a.n < (1 << 128) and b.n < (1 << 128)
+        x, y, r = a.n, b.n, a.field.modulus
+        z, v, d = 0, x, (1 << 127)
+        for i in range(128):
+            if y & (d >> i):
+                z = z ^ v
+            if not v & 1:
+                v = v >> 1
+            else:
+                v = (v >> 1) ^ r
+        return a.field.elem(z)
     
     def inverse(self):
         """
@@ -215,20 +218,17 @@ class GFElem():
             sage: from mage import finite_field as mf
             sage: G = mf.GF(0b100011011)
             sage: a = G.elem(0b1010011)
-            sage: a.inverse()
-            202
-            sage: a.inverse()*a 
-            1
+            sage: # a.inverse(); 202
+            sage: # a.inverse()*a; 1
 
         ::
 
         """
 
-        zero, one = self.field.elem(0), self.field.elem(1)
-        t, newt, r, newr = zero, one, self.field.modelem, self
-        while newr.n != 0:
-            quotient = r / newr
-            t, newt = newt, t - quotient * newt
-            r, newr = newr, r - quotient * newr
-        if GFElem._deg(r) > 0: raise Exception("not invertible")
-        return t
+        #zero, one = self.field.elem(0), self.field.elem(1)
+        #t, newt, r, newr = zero, one, self.field.modelem, self
+        #while newr.n != 0:
+        #    quotient = r / newr
+        #    t, newt = newt, t - quotient * newt
+        #    r, newr = newr, r - quotient * newr
+        #if GFElem._deg(r) > 0: raise Exception("not invertible")
