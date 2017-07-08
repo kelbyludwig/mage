@@ -7,10 +7,12 @@ class TestGCM(unittest.TestCase):
         C = g.GCM("yellow submarine") 
         i1,r1 = "yellow submarine", "yellow submarine"
         i2,r2 = "yellow subma", "yellow subma\x00\x00\x00\x00"
-        i3,r3 = "", "\x00"*16
+        i3,r3 = "yellow submarineyellow subma", "yellow submarineyellow subma\x00\x00\x00\x00"
+        i4,r4 = "", "\x00"*16
         assert C._bspad(i1) == r1
         assert C._bspad(i2) == r2
         assert C._bspad(i3) == r3
+        assert C._bspad(i4) == r4
 
     def test_elem_unelem(self):
         C = g.GCM("yellow submarine") 

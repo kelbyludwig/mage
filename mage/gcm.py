@@ -32,7 +32,7 @@ class GCM():
         if lm == 0:
             return bytes
         else:
-            return bytes + ('\x00' * lm)
+            return bytes + ('\x00' * (self.cipher.block_size - l % 16))
     
     def _decrypt(self, ct):
         return self.cipher.decrypt(ct)
@@ -51,7 +51,7 @@ class GCM():
         g = self.field.elem(0)
         for i in range(len(bs)/16):
             be = self._elem(bs[16*i:(i+1)*16])
-            print("g %s be %s" % (g, binascii.hexlify(bs[16*i:(i+1)*16])))
+            print("g %s be %016x" % (g, be.n))
             g = g + be
             g = g * self.he
         return self._unelem(g)
