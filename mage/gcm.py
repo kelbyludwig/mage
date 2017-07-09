@@ -40,13 +40,11 @@ class GCM():
     def _encrypt(self, pt):
         return self.cipher.encrypt(pt)
 
-    def _prep_input(self, pt, ad):
+    def _ghash(self, pt, ad):
         ptp = self._bspad(pt)
         adp = self._bspad(ad)
         bitlen = lambda x: struct.pack(">Q", len(x)*8)
-        return adp + ptp + bitlen(ad) + bitlen(pt)
-
-    def _ghash(self, bs):
+        bs = adp + ptp + bitlen(ad) + bitlen(pt)
         assert len(bs) % 16 == 0
         g = self.field.elem(0)
         for i in range(len(bs)/16):
