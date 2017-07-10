@@ -71,7 +71,7 @@ class GCM():
         ct = self._ctr_encrypt(pt, iv)
         g = self._ghash(ct, ad)
         t = self._elem(s) + self._elem(g)
-        return self._unelem(t)
+        return ct, self._unelem(t)
 
     def unseal(self, iv, ct, tag):
         pass
