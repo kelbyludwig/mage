@@ -1,6 +1,62 @@
 from sage.all import Integer as _Integer
 from sage.rings.integer import Integer as _RInteger
 
+class RingPolynomial():
+
+    def __init__(self, ring, coefficients):
+        """
+        Initializes a polynomial with coefficients in the base ring `ring`.
+
+        INPUT:
+        - ``ring`` -- the base ring
+
+        - ``coefficients`` -- a list representing polynomials in the base ring
+
+        EXAMPLES:
+
+        ::
+
+            sage: from mage import finite_field as mf
+            sage: Z7 = Zmod(7)
+            sage: P = mf.RingPolynomial(Z7, [1,2,3,4,9])
+            sage: P
+            [1, 2, 3, 4, 2]
+            sage: P.degree()
+            5
+
+        ::
+
+        """
+        ring_coefficients = map(lambda x: ring(x), coefficients)
+        trunc = 0
+        for trunc in range(len(ring_coefficients)):
+            if not ring_coefficients[trunc].is_zero():
+                break
+        self.coefficients = ring_coefficients[trunc:]
+        self.ring = ring 
+
+    def __repr__(self):
+        return str(self.coefficients)
+
+    def degree(self):
+        return len(self.coefficients)
+
+    def egcd(a, b):
+        if b.n == 0:
+            return a, a.field.elem(1), a.field.elem(0)
+            
+        s1, s2 = a.field.elem(0), a.field.elem(1)
+        t1, t2 = a.field.elem(1), a.field.elem(0)
+
+        while b.n != 0:
+            q, r = divmod(a, b)
+            s, t = s2 - q*s1, t2 - q*t1
+            a, b = b, r
+            s1, s2 = s, s1
+            t1, t2 = t, t1
+
+        return a, s2, t2
+
 class GF():
     """
     Returns a finite field defined by a irreducible polynomial.
@@ -49,10 +105,6 @@ class GFElem():
         ::
 
         """
-        #_, nr  = GFElem._divmod(n, field.modulus)
-        #if n > field.modulus:
-        #    raise Exception("non-reduced value supplied")
-        #self.n = nr
         self.n = n
         self.field = field
 
@@ -168,7 +220,6 @@ class GFElem():
 
         return a.n == b.n
 
-
     def __xor__(a, b):
         return a.field.elem(a.n ^ b.n) 
 
@@ -189,6 +240,10 @@ class GFElem():
         _, r = GFElem._divmod(a.n, b.n)
         return a.field.elem(r)
 
+    def __divmod__(a, b):
+        q, r = GFElem._divmod(a.n, b.n)
+        return a.field.elem(q), a.field.elem(r)
+
     def __mul__(a, b):
         assert a.field == b.field
         assert a.n < (1 << 128) and b.n < (1 << 128)
@@ -202,7 +257,9 @@ class GFElem():
             else:
                 v = (v >> 1) ^ r
         return a.field.elem(z)
+
     
+    #TODO(kkl): This is broken!
     def inverse(self):
         """
         Returns the inverse of the field element.
