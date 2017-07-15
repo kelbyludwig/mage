@@ -23,6 +23,11 @@ class RingPolynomial():
             [1, 2, 3, 4, 2]
             sage: P.degree()
             5
+            sage: P = mf.RingPolynomial(Z7, [7,2,3,4,9])
+            sage: P
+            [2, 3, 4, 2]
+            sage: P.degree()
+            4
 
         ::
 
