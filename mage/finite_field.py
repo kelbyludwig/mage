@@ -1,5 +1,6 @@
 from sage.all import Integer as _Integer
 from sage.rings.integer import Integer as _RInteger
+from itertools import izip_longest
 
 class RingPolynomial():
 
@@ -10,7 +11,8 @@ class RingPolynomial():
         INPUT:
         - ``ring`` -- the base ring
 
-        - ``coefficients`` -- a list representing polynomials in the base ring
+        - ``coefficients`` -- a list representing polynomials in the base ring.
+          coefficient[0] is the most significant coefficient.
 
         EXAMPLES:
 
@@ -28,6 +30,10 @@ class RingPolynomial():
             [2, 3, 4, 2]
             sage: P.degree()
             4
+            sage: P1 = mf.RingPolynomial(Z7, [3,9,7,7])
+            sage: P2 = mf.RingPolynomial(Z7, [7,2,3])
+            sage: P1 + P2 
+            [5, 5, 0, 0]
 
         ::
 
@@ -45,6 +51,10 @@ class RingPolynomial():
 
     def degree(self):
         return len(self.coefficients)
+
+    def __add__(a, b):
+        new_coef = [ia+ib for (ia,ib) in izip_longest(a.coefficients, b.coefficients, fillvalue=a.ring.zero())]
+        return RingPolynomial(a.ring, new_coef)
 
     def egcd(a, b):
         if b.n == 0:
