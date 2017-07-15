@@ -32,6 +32,8 @@ class RingPolynomial():
             4
             sage: P1 = mf.RingPolynomial(Z7, [3,9,7,7])
             sage: P2 = mf.RingPolynomial(Z7, [7,2,3])
+            sage: -P1
+            [4, 5, 0, 0]
             sage: P1 + P2 
             [5, 5, 0, 0]
             sage: P1 = mf.RingPolynomial(GF(2), [1,0,1,1])
@@ -42,8 +44,8 @@ class RingPolynomial():
             False
             sage: P1.is_zero()
             False
-            sage: (P1 - P1, (P1 - P1).is_zero())
-            ([], True)
+            sage: (P1 - P1, P1 + -P1, (P1 - P1).is_zero())
+            ([], [], True)
 
         ::
 
@@ -69,7 +71,8 @@ class RingPolynomial():
         return RingPolynomial(a.ring, new_coef)
 
     def __sub__(a, b):
-        return a+b
+        new_coef = [ia-ib for (ia,ib) in izip_longest(a.coefficients, b.coefficients, fillvalue=a.ring.zero())]
+        return RingPolynomial(a.ring, new_coef)
 
     def __mul__(a, b):
         if a.is_zero() or b.is_zero():
@@ -79,6 +82,9 @@ class RingPolynomial():
             for j, bc in enumerate(b.coefficients):
                 new_coef[i+j] += ac*bc
         return RingPolynomial(a.ring, new_coef)
+
+    def __neg__(self):
+        return RingPolynomial(self.ring, [-c for c in self.coefficients])
 
     def is_zero(self):
         return len(self.coefficients) == 0        
