@@ -34,27 +34,57 @@ class RingPolynomial():
             sage: P2 = mf.RingPolynomial(Z7, [7,2,3])
             sage: P1 + P2 
             [5, 5, 0, 0]
+            sage: P1 = mf.RingPolynomial(GF(2), [1,0,1,1])
+            sage: P2 = mf.RingPolynomial(GF(2), [1,1,0])
+            sage: P1 * P2 
+            [1, 1, 1, 0, 1, 0]
+            sage: P1 == P2
+            False
+            sage: P1.is_zero()
+            False
+            sage: (P1 - P1, (P1 - P1).is_zero())
+            ([], True)
 
         ::
 
         """
         ring_coefficients = map(lambda x: ring(x), coefficients)
         trunc = 0
-        for trunc in range(len(ring_coefficients)):
-            if not ring_coefficients[trunc].is_zero():
-                break
+        for rc in ring_coefficients:
+            if rc.is_zero():
+                trunc += 1
+                continue
+            break
         self.coefficients = ring_coefficients[trunc:]
         self.ring = ring 
 
     def __repr__(self):
         return str(self.coefficients)
 
-    def degree(self):
-        return len(self.coefficients)
+    def __eq__(a, b):
+        return a.ring == b.ring and a.coefficients == b.coefficients
 
     def __add__(a, b):
         new_coef = [ia+ib for (ia,ib) in izip_longest(a.coefficients, b.coefficients, fillvalue=a.ring.zero())]
         return RingPolynomial(a.ring, new_coef)
+
+    def __sub__(a, b):
+        return a+b
+
+    def __mul__(a, b):
+        if a.is_zero() or b.is_zero():
+            return RingPolynomial(a.ring, [])
+        new_coef = [a.ring.zero() for _ in range(len(a.coefficients) + len(b.coefficients) - 1)]
+        for i, ac in enumerate(a.coefficients):
+            for j, bc in enumerate(b.coefficients):
+                new_coef[i+j] += ac*bc
+        return RingPolynomial(a.ring, new_coef)
+
+    def is_zero(self):
+        return len(self.coefficients) == 0        
+
+    def degree(self):
+        return len(self.coefficients)
 
     def egcd(a, b):
         if b.n == 0:
