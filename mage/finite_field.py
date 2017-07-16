@@ -20,44 +20,49 @@ class RingPolynomial():
 
             sage: from mage import finite_field as mf
             sage: Z7 = Zmod(7)
-            sage: P = mf.RingPolynomial(Z7, [1,2,3,4,9])
+            sage: P = mf.RingPolynomial(Z7, [9,4,3,2,1])
             sage: P
-            [1, 2, 3, 4, 2]
+            [2, 4, 3, 2, 1]
             sage: P.degree()
             5
             sage: P = mf.RingPolynomial(Z7, [7,2,3,4,9])
             sage: P
-            [2, 3, 4, 2]
+            [0, 2, 3, 4, 2]
             sage: P.degree()
-            4
-            sage: P1 = mf.RingPolynomial(Z7, [3,9,7,7])
-            sage: P2 = mf.RingPolynomial(Z7, [7,2,3])
+            5
+            sage: P1 = mf.RingPolynomial(Z7, [7,7,9,3,7])
+            sage: P2 = mf.RingPolynomial(Z7, [3,2,7])
             sage: -P1
-            [4, 5, 0, 0]
+            [0, 0, 5, 4]
             sage: P1 + P2 
-            [5, 5, 0, 0]
-            sage: P1 = mf.RingPolynomial(GF(2), [1,0,1,1])
-            sage: P2 = mf.RingPolynomial(GF(2), [1,1,0])
-            sage: P1 * P2 
-            [1, 1, 1, 0, 1, 0]
-            sage: P1 == P2
-            False
-            sage: P1.is_zero()
+            [3, 2, 2, 3]
+            sage: f = mf.RingPolynomial(GF(2), [1,1,0,1])
+            sage: g = mf.RingPolynomial(GF(2), [0,1,1])
+            sage: f * g
+            [0, 1, 0, 1, 1, 1]
+            sage: g.is_zero()
             False
             sage: (P1 - P1, P1 + -P1, (P1 - P1).is_zero())
             ([], [], True)
+            sage: g = mf.RingPolynomial(GF(2), [1,1,1,1,0,1,1])
+            sage: h = mf.RingPolynomial(GF(2), [1,0,0,1,1])
+            sage: q, r = divmod(g, h)
+            sage: q, r
+            ([0, 0, 1], [1, 1, 0, 1])
+            sage: q*h+r == g
+            True
 
         ::
 
         """
         ring_coefficients = map(lambda x: ring(x), coefficients)
-        trunc = 0
-        for rc in ring_coefficients:
+        trunc = len(ring_coefficients)
+        for rc in reversed(ring_coefficients):
             if rc.is_zero():
-                trunc += 1
+                trunc -= 1
                 continue
             break
-        self.coefficients = ring_coefficients[trunc:]
+        self.coefficients = ring_coefficients[:trunc]
         self.ring = ring 
 
     def __repr__(self):
@@ -86,20 +91,41 @@ class RingPolynomial():
     def __neg__(self):
         return RingPolynomial(self.ring, [-c for c in self.coefficients])
 
+    def __getitem__(self, i):
+        return self.coefficients[i]
+
+    def __divmod__(a, b):
+        if b.degree() < 0:
+            raise Exception("polydiv by zero")
+        q, r = RingPolynomial(a.ring, []), a
+        if a.degree() < b.degree():
+            return q, a
+        while r.degree() >= b.degree():
+            e = r.degree() - b.degree()
+            z = [a.ring.zero()] * e
+            d = RingPolynomial(a.ring, z + [r[-1] / b[-1]])
+            q += d
+            r -= d * b
+        return q, r
+
     def is_zero(self):
         return len(self.coefficients) == 0        
 
     def degree(self):
+        if self.is_zero():
+            return -1
         return len(self.coefficients)
 
     def egcd(a, b):
-        if b.n == 0:
-            return a, a.field.elem(1), a.field.elem(0)
+        one = PolynomialRing(a.ring, [1])
+        zero = PolynomialRing(a.ring, [])
+        if b.is_zero():
+            return a, one, zero
             
-        s1, s2 = a.field.elem(0), a.field.elem(1)
-        t1, t2 = a.field.elem(1), a.field.elem(0)
+        s1, s2 = zero, one
+        t1, t2 = one, zero
 
-        while b.n != 0:
+        while not b.is_zero():
             q, r = divmod(a, b)
             s, t = s2 - q*s1, t2 - q*t1
             a, b = b, r
