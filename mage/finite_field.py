@@ -51,6 +51,8 @@ class RingPolynomial():
             ([0, 0, 1], [1, 1, 0, 1])
             sage: q*h+r == g
             True
+            sage: q == g/h, r == g%h
+            (True, True)
 
         ::
 
@@ -93,6 +95,14 @@ class RingPolynomial():
 
     def __getitem__(self, i):
         return self.coefficients[i]
+
+    def __div__(a, b):
+        q,_ = divmod(a, b)
+        return q
+
+    def __mod__(a, b):
+        _,r = divmod(a, b)
+        return r
 
     def __divmod__(a, b):
         if b.degree() < 0:
