@@ -15,7 +15,6 @@ class GCM():
         self.he = self._elem(self.hash_key)
     
     def _elem(self, bytes):
-        #TODO(kkl): Not sure of endianness
         assert len(bytes) == 16
         e1, e2 = struct.unpack(">QQ", bytes)
         en = (e1 << 64) + e2

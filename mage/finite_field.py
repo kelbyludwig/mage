@@ -19,40 +19,41 @@ class RingPolynomial():
         ::
 
             sage: from mage import finite_field as mf
-            sage: Z7 = Zmod(7)
-            sage: P = mf.RingPolynomial(Z7, [9,4,3,2,1])
-            sage: P
-            [2, 4, 3, 2, 1]
-            sage: P.degree()
-            5
-            sage: P = mf.RingPolynomial(Z7, [7,2,3,4,9])
-            sage: P
-            [0, 2, 3, 4, 2]
-            sage: P.degree()
-            5
-            sage: P1 = mf.RingPolynomial(Z7, [7,7,9,3,7])
-            sage: P2 = mf.RingPolynomial(Z7, [3,2,7])
-            sage: -P1
-            [0, 0, 5, 4]
-            sage: P1 + P2 
-            [3, 2, 2, 3]
-            sage: f = mf.RingPolynomial(GF(2), [1,1,0,1])
-            sage: g = mf.RingPolynomial(GF(2), [0,1,1])
-            sage: f * g
-            [0, 1, 0, 1, 1, 1]
-            sage: g.is_zero()
-            False
-            sage: (P1 - P1, P1 + -P1, (P1 - P1).is_zero())
-            ([], [], True)
-            sage: g = mf.RingPolynomial(GF(2), [1,1,1,1,0,1,1])
-            sage: h = mf.RingPolynomial(GF(2), [1,0,0,1,1])
-            sage: q, r = divmod(g, h)
-            sage: q, r
-            ([0, 0, 1], [1, 1, 0, 1])
+            sage: Z2 = Zmod(2)
+            sage: f = mf.RingPolynomial(Z2, [1,1,0,1])
+            sage: g = mf.RingPolynomial(Z2, [0,1,1])
+            sage: f+g
+            [1, 0, 1, 1]
+            sage: (f + g).to_string()
+            '1*x^3 + 1*x^2 + 1*x^0'
+            sage: (f * g).to_string()
+            '1*x^5 + 1*x^4 + 1*x^3 + 1*x^1'
+            sage: g = mf.RingPolynomial(Z2, [1,1,1,1,0,1,1])
+            sage: g.to_string()
+            '1*x^6 + 1*x^5 + 1*x^3 + 1*x^2 + 1*x^1 + 1*x^0'
+            sage: h = mf.RingPolynomial(Z2, [1,0,0,1,1])
+            sage: h.to_string()
+            '1*x^4 + 1*x^3 + 1*x^0'
+            sage: q,r = divmod(g, h)
+            sage: (q.to_string(), r.to_string())
+            ('1*x^2', '1*x^3 + 1*x^1 + 1*x^0')
             sage: q*h+r == g
             True
-            sage: q == g/h, r == g%h
-            (True, True)
+            sage: (g-g).is_zero()
+            True
+            sage: g.degree()
+            6
+            sage: g = mf.RingPolynomial(Z2, [1,0,0,0,1,1,1,0,1,1,1])
+            sage: g.to_string()
+            '1*x^10 + 1*x^9 + 1*x^8 + 1*x^6 + 1*x^5 + 1*x^4 + 1*x^0'
+            sage: h = mf.RingPolynomial(Z2, [1,0,1,1,0,1,1,0,0,1])
+            sage: h.to_string()
+            '1*x^9 + 1*x^6 + 1*x^5 + 1*x^3 + 1*x^2 + 1*x^0'
+            sage: d, s, t = g.egcd(h)
+            sage: d.to_string()
+            '1*x^3 + 1*x^1 + 1*x^0'
+            sage: s*g + t*h == d
+            True
 
         ::
 
@@ -69,6 +70,14 @@ class RingPolynomial():
 
     def __repr__(self):
         return str(self.coefficients)
+
+    def to_string(self):
+        st = ""
+        n = len(self.coefficients)
+        for i,d in enumerate(reversed(self.coefficients)):
+            if d != self.ring(0):
+                st += "%d*x^%d + " % (d, n-i-1)
+        return st[:-3]
 
     def __eq__(a, b):
         return a.ring == b.ring and a.coefficients == b.coefficients
@@ -124,25 +133,24 @@ class RingPolynomial():
     def degree(self):
         if self.is_zero():
             return -1
-        return len(self.coefficients)
+        return len(self.coefficients)-1
 
-    def egcd(a, b):
-        one = PolynomialRing(a.ring, [1])
-        zero = PolynomialRing(a.ring, [])
-        if b.is_zero():
-            return a, one, zero
-            
-        s1, s2 = zero, one
-        t1, t2 = one, zero
-
-        while not b.is_zero():
-            q, r = divmod(a, b)
+    def egcd(g, h):
+        zero = RingPolynomial(g.ring, [])
+        one = RingPolynomial(g.ring, [1])
+        if h.is_zero():
+            return g, one, zero
+        s2, s1 = one, zero
+        t2, t1 = zero, one
+        i = 1
+        while not h.is_zero():
+            q, r = divmod(g, h)
             s, t = s2 - q*s1, t2 - q*t1
-            a, b = b, r
-            s1, s2 = s, s1
-            t1, t2 = t, t1
-
-        return a, s2, t2
+            g, h = h, r
+            s2, s1 = s1, s
+            t2, t1 = t1, t
+            i += 1
+        return g, s2, t2
 
 class GF():
     """
