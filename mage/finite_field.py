@@ -54,6 +54,10 @@ class RingPolynomial():
             '1*x^3 + 1*x^1 + 1*x^0'
             sage: s*g + t*h == d
             True
+            sage: Z5 = Zmod(5)
+            sage: g = mf.RingPolynomial(Z5, [1,0,2])
+            sage: g.monic().to_string()
+            '1*x^2 + 3*x^0'
 
         ::
 
@@ -134,6 +138,13 @@ class RingPolynomial():
         if self.is_zero():
             return -1
         return len(self.coefficients)-1
+
+    def monic(self):
+        cs = self.coefficients[:]
+        d = cs[-1]
+        for i,x in enumerate(cs):
+            cs[i] = x / d 
+        return RingPolynomial(self.ring, cs)
 
     def egcd(g, h):
         zero = RingPolynomial(g.ring, [])
