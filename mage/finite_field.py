@@ -58,6 +58,14 @@ class RingPolynomial():
             sage: g = mf.RingPolynomial(Z5, [1,0,2])
             sage: g.monic().to_string()
             '1*x^2 + 3*x^0'
+            sage: g.to_string()
+            '2*x^2 + 1*x^0'
+            sage: g.derivative().to_string()
+            '4*x^1'
+            sage: g.derivative().derivative().to_string()
+            '4*x^0'
+            sage: g.derivative().derivative().derivative().to_string()
+            '0'
 
         ::
 
@@ -78,6 +86,8 @@ class RingPolynomial():
     def to_string(self):
         st = ""
         n = len(self.coefficients)
+        if n == 0:
+            return '0'
         for i,d in enumerate(reversed(self.coefficients)):
             if d != self.ring(0):
                 st += "%d*x^%d + " % (d, n-i-1)
@@ -144,6 +154,16 @@ class RingPolynomial():
         d = cs[-1]
         for i,x in enumerate(cs):
             cs[i] = x / d 
+        return RingPolynomial(self.ring, cs)
+
+    def derivative(self):
+        cs = self.coefficients[:]
+        nm = len(cs)
+        if nm == 0:
+            return RingPolynomial(self.ring, [])
+        cs = cs[1:] # drop the constant
+        for i,c in enumerate(cs):
+            cs[i] = cs[i]*self.ring(i+1)
         return RingPolynomial(self.ring, cs)
 
     def egcd(g, h):
