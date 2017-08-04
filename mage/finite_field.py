@@ -66,6 +66,16 @@ class RingPolynomial():
             '4*x^0'
             sage: g.derivative().derivative().derivative().to_string()
             '0'
+            sage: g = mf.RingPolynomial(Z5, [0, 0, 0, 1, 1, 2, 2, 1, 1])
+            sage: g.to_string()
+            '1*x^8 + 1*x^7 + 2*x^6 + 2*x^5 + 1*x^4 + 1*x^3'
+            sage: h = mf.RingPolynomial(Z5, [0, 0, 3, 4, 0, 2, 2, 3])
+            sage: d, s, t = g.egcd(h)
+            sage: d == s*g + t*h
+            True
+            sage: d.to_string()
+            blah
+            sage: #g.squarefree_decomposition(); [x+1, ab]
 
         ::
 
@@ -121,11 +131,11 @@ class RingPolynomial():
 
     def __div__(a, b):
         q,_ = divmod(a, b)
-        return q
+        return RingPolynomial(q.ring, q.coefficients)
 
     def __mod__(a, b):
         _,r = divmod(a, b)
-        return r
+        return RingPolynomial(r.ring, r.coefficients)
 
     def __divmod__(a, b):
         if b.degree() < 0:
@@ -133,16 +143,19 @@ class RingPolynomial():
         q, r = RingPolynomial(a.ring, []), a
         if a.degree() < b.degree():
             return q, a
-        while r.degree() >= b.degree():
-            e = r.degree() - b.degree()
+        bdeg = b.degree()
+        lc = b[-1]
+        while r.degree() >= bdeg:
+            e = r.degree() - bdeg
             z = [a.ring.zero()] * e
-            d = RingPolynomial(a.ring, z + [r[-1] / b[-1]])
+            d = RingPolynomial(a.ring, z + [r[-1] / lc])
             q += d
             r -= d * b
         return q, r
 
     def is_zero(self):
-        return len(self.coefficients) == 0        
+        s = RingPolynomial(self.ring, self.coefficients)
+        return len(s.coefficients) == 0 
 
     def degree(self):
         if self.is_zero():
@@ -166,21 +179,47 @@ class RingPolynomial():
             cs[i] = cs[i]*self.ring(i+1)
         return RingPolynomial(self.ring, cs)
 
+    def squarefree_decomposition(self):
+        factors = []
+        T, _, _ = self.egcd(self.derivative())
+        print("T %s" % T.to_string())
+        k = 1
+        Tk = T
+        Vk = self/T
+        print("Vk %s" % Vk.to_string())
+        while Vk.degree() > 0:
+            Vkplus1, _, _ = self.egcd(Vk)
+            print("Vkplus1 %s" % Vkplus1.to_string())
+            Tkplus1 = Tk/Vkplus1
+            print("Tkplus1 %s" % Tkplus1.to_string())
+            factors.append((Vk/Vkplus1, k))
+            print("factors: %s" % factors)
+            if len(factors) > 5:
+                raise Exception("oh snap")
+            k = k+1
+            Vk = Vkplus1
+            Tk = Tkplus1
+        return factors
+
     def egcd(g, h):
         zero = RingPolynomial(g.ring, [])
         one = RingPolynomial(g.ring, [1])
         if h.is_zero():
             return g, one, zero
+
         s2, s1 = one, zero
         t2, t1 = zero, one
-        i = 1
         while not h.is_zero():
+            print("g %s" % g.to_string())
+            print("h %s" % h.to_string())
             q, r = divmod(g, h)
+            print("g divmod h = %s, %s" % (q.to_string(), r.to_string()))
             s, t = s2 - q*s1, t2 - q*t1
+            print("s2 - q*s1 = (%s) - (%s)*(%s) = %s" % (s2.to_string(), q.to_string(), s1.to_string(), s.to_string()))
             g, h = h, r
             s2, s1 = s1, s
             t2, t1 = t1, t
-            i += 1
+            print("h is zero? %s, %s" % (h.to_string(), h.is_zero()))
         return g, s2, t2
 
 class GF():
