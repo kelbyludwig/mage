@@ -49,11 +49,6 @@ class RingPolynomial():
             sage: h = mf.RingPolynomial(Z2, [1,0,1,1,0,1,1,0,0,1])
             sage: h.to_string()
             '1*x^9 + 1*x^6 + 1*x^5 + 1*x^3 + 1*x^2 + 1*x^0'
-            sage: d, s, t = g.egcd(h)
-            sage: d.to_string()
-            '1*x^3 + 1*x^1 + 1*x^0'
-            sage: s*g + t*h == d
-            True
             sage: Z5 = Zmod(5)
             sage: g = mf.RingPolynomial(Z5, [1,0,2])
             sage: g.monic().to_string()
@@ -70,12 +65,12 @@ class RingPolynomial():
             sage: g.to_string()
             '1*x^8 + 1*x^7 + 2*x^6 + 2*x^5 + 1*x^4 + 1*x^3'
             sage: h = mf.RingPolynomial(Z5, [0, 0, 3, 4, 0, 2, 2, 3])
-            sage: d, s, t = g.egcd(h)
-            sage: d == s*g + t*h
-            True
+            sage: d = g.gcd(h)
             sage: d.to_string()
-            blah
-            sage: #g.squarefree_decomposition(); [x+1, ab]
+            '1*x^4 + 1*x^2'
+            sage: g = mf.RingPolynomial(Z5,[0, 0, 0, 0, 3, 3, 3, 1, 2, 3, 2, 0, 0, 0, 3, 3, 3, 1, 2, 4, 3, 1, 2, 4, 0, 3, 4, 3, 1, 3, 0, 4, 3, 1, 4, 1]) 
+            sage: g.squarefree_decomposition()
+            [([0, 2, 1], 4), ([3, 1], 7), ([1, 1], 5), ([4, 1], 15)]
 
         ::
 
@@ -105,6 +100,9 @@ class RingPolynomial():
 
     def __eq__(a, b):
         return a.ring == b.ring and a.coefficients == b.coefficients
+
+    def __ne__(a, b):
+        return not (a == b)
 
     def __add__(a, b):
         new_coef = [ia+ib for (ia,ib) in izip_longest(a.coefficients, b.coefficients, fillvalue=a.ring.zero())]
@@ -179,48 +177,57 @@ class RingPolynomial():
             cs[i] = cs[i]*self.ring(i+1)
         return RingPolynomial(self.ring, cs)
 
-    def squarefree_decomposition(self):
+    def squarefree_decomposition(A, pmult=0):
+        p = A.ring.characteristic()
+        one = RingPolynomial(A.ring, [A.ring(1)])
+        T = A.gcd(A.derivative())
         factors = []
-        T, _, _ = self.egcd(self.derivative())
-        print("T %s" % T.to_string())
         k = 1
         Tk = T
-        Vk = self/T
-        print("Vk %s" % Vk.to_string())
+        Vk = A/T
         while Vk.degree() > 0:
-            Vkplus1, _, _ = self.egcd(Vk)
-            print("Vkplus1 %s" % Vkplus1.to_string())
+            if not (k % p).is_zero():
+                Vkplus1 = Tk.gcd(Vk)
+                if (Vk/Vkplus1) != one:
+                    factors.append((Vk/Vkplus1, p**(pmult)*k))
+            else:
+                Vkplus1 = Vk
             Tkplus1 = Tk/Vkplus1
-            print("Tkplus1 %s" % Tkplus1.to_string())
-            factors.append((Vk/Vkplus1, k))
-            print("factors: %s" % factors)
-            if len(factors) > 5:
-                raise Exception("oh snap")
             k = k+1
             Vk = Vkplus1
             Tk = Tkplus1
-        return factors
+        if Tk.degree() == 0:
+            return factors
+        newACofs = []
+        for i in range(Tk.degree()/p + 1):
+            newACofs.append(Tk.coefficients[p*i])
+        newA = RingPolynomial(A.ring, newACofs)
+        return factors + newA.squarefree_decomposition(pmult=pmult+1)
 
-    def egcd(g, h):
-        zero = RingPolynomial(g.ring, [])
-        one = RingPolynomial(g.ring, [1])
-        if h.is_zero():
-            return g, one, zero
+    def gcd(g, h):
+        gc, hc = RingPolynomial(g.ring, g.coefficients), RingPolynomial(h.ring, h.coefficients)
+        while not hc.is_zero():
+            _, r = divmod(gc, hc)
+            gc = hc
+            hc = r
+        return gc.monic()
 
-        s2, s1 = one, zero
-        t2, t1 = zero, one
-        while not h.is_zero():
-            print("g %s" % g.to_string())
-            print("h %s" % h.to_string())
-            q, r = divmod(g, h)
-            print("g divmod h = %s, %s" % (q.to_string(), r.to_string()))
-            s, t = s2 - q*s1, t2 - q*t1
-            print("s2 - q*s1 = (%s) - (%s)*(%s) = %s" % (s2.to_string(), q.to_string(), s1.to_string(), s.to_string()))
-            g, h = h, r
-            s2, s1 = s1, s
-            t2, t1 = t1, t
-            print("h is zero? %s, %s" % (h.to_string(), h.is_zero()))
-        return g, s2, t2
+    # TODO(kkl): This mostly works but g is not always monic?
+    #def egcd(g, h):
+    #    zero = RingPolynomial(g.ring, [])
+    #    one = RingPolynomial(g.ring, [1])
+    #    if h.is_zero():
+    #        return g, one, zero
+
+    #    s2, s1 = one, zero
+    #    t2, t1 = zero, one
+    #    while not h.is_zero():
+    #        q, r = divmod(g, h)
+    #        s, t = s2 - q*s1, t2 - q*t1
+    #        g, h = h, r
+    #        s2, s1 = s1, s
+    #        t2, t1 = t1, t
+    #    return g, s2, t2
 
 class GF():
     """
