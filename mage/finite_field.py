@@ -77,6 +77,14 @@ class RingPolynomial():
             sage: g = mf.RingPolynomial(Z5, [2, 1, 1, 3, 3, 2, 4, 2, 0, 0, 2, 1, 3, 2, 2, 3, 1, 4, 4, 3, 1])
             sage: # this next test takes forever
             sage: #g.ddf() => [([3, 2, 1], 2), ([2, 0, 4, 0, 1], 4), ([1, 1, 4, 0, 4, 3, 1], 6), ([2, 1, 2, 0, 1, 1, 2, 3, 1], 8)]
+            sage: g = mf.RingPolynomial(Z5, [1, 4, 4, 2, 0, 1, 4, 1, 1, 3, 1, 1, 2, 1])
+            sage: sqf = g.squarefree_decomposition()
+            sage: sqf
+            [([1, 2, 2, 1], 1), ([1, 1, 1, 2, 0, 1], 2)] 
+            sage: sqf_rings = lambda x: mf.RingPolynomial(g.ring, x[0])
+            sage: sqf_rings_list = map(sqf_rings, sqf)
+            sage: map(lambda x: x.ddf(), sqf_rings_list)
+            [[([1, 1], 1), ([1, 1, 1], 2)], [([1, 0, 1], 1), ([1, 1, 0, 1], 3)]]
 
         ::
 
@@ -216,14 +224,9 @@ class RingPolynomial():
         one = RingPolynomial(f.ring, [f.ring(1)])
         while fp.degree() >= 2*i:
             cs = cgen(i)
-            print("1")
             np = RingPolynomial(f.ring, cs)
-            print("2 np %d fp %d" % (np.degree(), fp.degree()))
-            #np = np % fp
             _, np = divmod(np, fp)
-            print("3")
             g = fp.gcd(np)
-            print("4")
             if g != one:
                 s.append((g, i))
                 fp = fp / g
