@@ -71,6 +71,12 @@ class RingPolynomial():
             sage: g = mf.RingPolynomial(Z5,[0, 0, 0, 0, 3, 3, 3, 1, 2, 3, 2, 0, 0, 0, 3, 3, 3, 1, 2, 4, 3, 1, 2, 4, 0, 3, 4, 3, 1, 3, 0, 4, 3, 1, 4, 1]) 
             sage: g.squarefree_decomposition()
             [([0, 2, 1], 4), ([3, 1], 7), ([1, 1], 5), ([4, 1], 15)]
+            sage: g = mf.RingPolynomial(Z5, [4, 2, 4, 4, 2, 0, 1])
+            sage: g.ddf()
+            [([2, 3, 1], 1), ([2, 3, 4, 2, 1], 2)]
+            sage: g = mf.RingPolynomial(Z5, [2, 1, 1, 3, 3, 2, 4, 2, 0, 0, 2, 1, 3, 2, 2, 3, 1, 4, 4, 3, 1])
+            sage: # this next test takes forever
+            sage: #g.ddf() => [([3, 2, 1], 2), ([2, 0, 4, 0, 1], 4), ([1, 1, 4, 0, 4, 3, 1], 6), ([2, 1, 2, 0, 1, 1, 2, 3, 1], 8)]
 
         ::
 
@@ -203,6 +209,31 @@ class RingPolynomial():
             newACofs.append(Tk.coefficients[p*i])
         newA = RingPolynomial(A.ring, newACofs)
         return factors + newA.squarefree_decomposition(pmult=pmult+1)
+
+    def ddf(f):
+        i, s, fp, q = 0, [], RingPolynomial(f.ring, f.coefficients), f.ring.characteristic()
+        cgen = lambda i: [0, -1] + [0]*(q**i-2) + [1]
+        one = RingPolynomial(f.ring, [f.ring(1)])
+        while fp.degree() >= 2*i:
+            cs = cgen(i)
+            print("1")
+            np = RingPolynomial(f.ring, cs)
+            print("2 np %d fp %d" % (np.degree(), fp.degree()))
+            #np = np % fp
+            _, np = divmod(np, fp)
+            print("3")
+            g = fp.gcd(np)
+            print("4")
+            if g != one:
+                s.append((g, i))
+                fp = fp / g
+            i += 1
+        if fp != one:
+            s.append((fp, fp.degree()))
+        if len(s) == 0:
+            return [(f, 1)]
+        else:
+            return s
 
     def gcd(g, h):
         gc, hc = RingPolynomial(g.ring, g.coefficients), RingPolynomial(h.ring, h.coefficients)
