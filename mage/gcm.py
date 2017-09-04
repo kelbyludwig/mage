@@ -13,7 +13,7 @@ class GCM():
         self.field  = _ff.GF(0xE1000000000000000000000000000000)
         self.hash_key = self._block_encrypt('\x00'*self.cipher.block_size)
         self.he = self._elem(self.hash_key)
-    
+
     def _elem(self, bytes):
         assert len(bytes) == 16
         e1, e2 = struct.unpack(">QQ", bytes)
@@ -34,7 +34,7 @@ class GCM():
             return bytes
         else:
             return bytes + ('\x00' * (self.cipher.block_size - l % 16))
-    
+
     def _block_decrypt(self, ct):
         assert len(pt) == self.cipher.block_size
         return self.cipher.decrypt(ct)
@@ -45,7 +45,7 @@ class GCM():
 
     def _ctr_encrypt(self, pt, iv):
         hi, lo = struct.unpack(">QQ", iv)
-        iv = (hi<<64)+lo+1 #because its already been used
+        iv = (hi<<64)+lo+1 #+1 because its already been used
         ctr = Counter.new(128, initial_value=iv)
         a = AES.new(self.key, AES.MODE_CTR, counter=ctr)
         return a.encrypt(pt)
@@ -65,7 +65,7 @@ class GCM():
 
     def seal(self, nonce, pt, ad):
         assert len(nonce) == 12 # 96 bit nonce
-        iv = nonce + struct.pack(">L", 1) 
+        iv = nonce + struct.pack(">L", 1)
         s = self._block_encrypt(iv)
         ct = self._ctr_encrypt(pt, iv)
         g = self._ghash(ct, ad)

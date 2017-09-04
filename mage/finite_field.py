@@ -1,6 +1,8 @@
 from sage.all import Integer as _Integer
 from sage.rings.integer import Integer as _RInteger
 from itertools import izip_longest
+from random import randint
+
 
 class RingPolynomial():
 
@@ -68,23 +70,28 @@ class RingPolynomial():
             sage: d = g.gcd(h)
             sage: d.to_string()
             '1*x^4 + 1*x^2'
-            sage: g = mf.RingPolynomial(Z5,[0, 0, 0, 0, 3, 3, 3, 1, 2, 3, 2, 0, 0, 0, 3, 3, 3, 1, 2, 4, 3, 1, 2, 4, 0, 3, 4, 3, 1, 3, 0, 4, 3, 1, 4, 1]) 
-            sage: g.squarefree_decomposition()
+            sage: g = mf.RingPolynomial(Z5,[0, 0, 0, 0, 3, 3, 3, 1, 2, 3, 2, 0, 0, 0, 3, 3, 3, 1, 2, 4, 3, 1, 2, 4, 0, 3, 4, 3, 1, 3, 0, 4, 3, 1, 4, 1])
+            sage: g.sfd()
             [([0, 2, 1], 4), ([3, 1], 7), ([1, 1], 5), ([4, 1], 15)]
             sage: g = mf.RingPolynomial(Z5, [4, 2, 4, 4, 2, 0, 1])
             sage: g.ddf()
             [([2, 3, 1], 1), ([2, 3, 4, 2, 1], 2)]
-            sage: g = mf.RingPolynomial(Z5, [2, 1, 1, 3, 3, 2, 4, 2, 0, 0, 2, 1, 3, 2, 2, 3, 1, 4, 4, 3, 1])
+            sage: # g = mf.RingPolynomial(Z5, [2, 1, 1, 3, 3, 2, 4, 2, 0, 0, 2, 1, 3, 2, 2, 3, 1, 4, 4, 3, 1])
             sage: # this next test takes forever
-            sage: #g.ddf() => [([3, 2, 1], 2), ([2, 0, 4, 0, 1], 4), ([1, 1, 4, 0, 4, 3, 1], 6), ([2, 1, 2, 0, 1, 1, 2, 3, 1], 8)]
+            sage: # g.ddf() # => [([3, 2, 1], 2), ([2, 0, 4, 0, 1], 4), ([1, 1, 4, 0, 4, 3, 1], 6), ([2, 1, 2, 0, 1, 1, 2, 3, 1], 8)]
             sage: g = mf.RingPolynomial(Z5, [1, 4, 4, 2, 0, 1, 4, 1, 1, 3, 1, 1, 2, 1])
-            sage: sqf = g.squarefree_decomposition()
+            sage: sqf = g.sfd()
             sage: sqf
-            [([1, 2, 2, 1], 1), ([1, 1, 1, 2, 0, 1], 2)] 
+            [([1, 2, 2, 1], 1), ([1, 1, 1, 2, 0, 1], 2)]
             sage: sqf_rings = lambda x: mf.RingPolynomial(g.ring, x[0])
             sage: sqf_rings_list = map(sqf_rings, sqf)
             sage: map(lambda x: x.ddf(), sqf_rings_list)
             [[([1, 1], 1), ([1, 1, 1], 2)], [([1, 0, 1], 1), ([1, 1, 0, 1], 3)]]
+            sage: g = mf.RingPolynomial(Z5, [1, 4, 4, 2, 0, 1, 4, 1, 1, 3, 1, 1, 2, 1])
+            sage: h = mf.RingPolynomial(Z5, [0, 0, 3, 4, 0, 2, 2, 1])
+            sage: r = (g*g*g) % h
+            sage: r == pow(g, 3, h)
+            True
 
         ::
 
@@ -97,7 +104,7 @@ class RingPolynomial():
                 continue
             break
         self.coefficients = ring_coefficients[:trunc]
-        self.ring = ring 
+        self.ring = ring
 
     def __repr__(self):
         return str(self.coefficients)
@@ -107,7 +114,7 @@ class RingPolynomial():
         n = len(self.coefficients)
         if n == 0:
             return '0'
-        for i,d in enumerate(reversed(self.coefficients)):
+        for i, d in enumerate(reversed(self.coefficients)):
             if d != self.ring(0):
                 st += "%d*x^%d + " % (d, n-i-1)
         return st[:-3]
@@ -119,7 +126,7 @@ class RingPolynomial():
         return not (a == b)
 
     def __add__(a, b):
-        new_coef = [ia+ib for (ia,ib) in izip_longest(a.coefficients, b.coefficients, fillvalue=a.ring.zero())]
+        new_coef = [ia+ib for (ia, ib) in izip_longest(a.coefficients, b.coefficients, fillvalue=a.ring.zero())]
         return RingPolynomial(a.ring, new_coef)
 
     def __sub__(a, b):
@@ -165,9 +172,24 @@ class RingPolynomial():
             r -= d * b
         return q, r
 
+    def __pow__(a, x, mod=None):
+        if mod is None:
+            raise NotImplementedError("im feeling lazy so no thx")
+        result = RingPolynomial(a.ring, [1])
+        if mod == result:  # just checking if modulus is 1
+            return RingPolynomial(a.ring, [])
+        base = RingPolynomial(a.ring, a.coefficients)
+        _, base = divmod(a, mod)
+        while x > 0:
+            if x % 2 == 1:
+                result = (result * base) % mod
+            x = x >> 1
+            base = (base * base) % mod
+        return result
+
     def is_zero(self):
         s = RingPolynomial(self.ring, self.coefficients)
-        return len(s.coefficients) == 0 
+        return len(s.coefficients) == 0
 
     def degree(self):
         if self.is_zero():
@@ -178,7 +200,7 @@ class RingPolynomial():
         cs = self.coefficients[:]
         d = cs[-1]
         for i,x in enumerate(cs):
-            cs[i] = x / d 
+            cs[i] = x / d
         return RingPolynomial(self.ring, cs)
 
     def derivative(self):
@@ -191,7 +213,7 @@ class RingPolynomial():
             cs[i] = cs[i]*self.ring(i+1)
         return RingPolynomial(self.ring, cs)
 
-    def squarefree_decomposition(A, pmult=0):
+    def sfd(A, pmult=0):
         p = A.ring.characteristic()
         one = RingPolynomial(A.ring, [A.ring(1)])
         T = A.gcd(A.derivative())
@@ -216,7 +238,7 @@ class RingPolynomial():
         for i in range(Tk.degree()/p + 1):
             newACofs.append(Tk.coefficients[p*i])
         newA = RingPolynomial(A.ring, newACofs)
-        return factors + newA.squarefree_decomposition(pmult=pmult+1)
+        return factors + newA.sfd(pmult=pmult+1)
 
     def ddf(f):
         i, s, fp, q = 0, [], RingPolynomial(f.ring, f.coefficients), f.ring.characteristic()
@@ -237,6 +259,33 @@ class RingPolynomial():
             return [(f, 1)]
         else:
             return s
+
+    def _random_polynomial(self):
+        order = self.ring.order()
+        cfs = [randint(0, order) for _ in range(len(self.coefficients))]
+        return RingPolynomial(self.ring, cfs)
+
+    #def edf(f, d):
+    #    n = f.degree()
+    #    r = n / d
+    #    S = set(f)
+
+    #    while len(S) < r:
+    #        h = f._random_polynomial()
+    #        g = gcd(h, f)
+
+    #        if g == 1:
+    #            g = h^((q^d - 1)/3) - 1 mod f
+
+    #        for u in S:
+    #            if deg(u) = d:
+    #                continue
+
+    #            if gcd(g, u) != 1 and gcd(g, u) != u:
+    #                S = union(S - {u}, {gcd(g, u), u / gcd(g, u)})
+
+    #    return S
+
 
     def gcd(g, h):
         gc, hc = RingPolynomial(g.ring, g.coefficients), RingPolynomial(h.ring, h.coefficients)
@@ -278,7 +327,7 @@ class GF():
         return a.modulus == b.modulus
 
 class GFElem():
-    
+
     def __init__(self, n, field):
         """
         Return a instance of a element of a binary finite field.
@@ -289,7 +338,7 @@ class GFElem():
         - ``field`` -- a GF instance that this element belongs to
 
         OUTPUT:
-        
+
         A binary finite field element.
 
         EXAMPLES:
@@ -321,7 +370,7 @@ class GFElem():
 
         INPUT:
 
-        - ``a`` -- the numerator 
+        - ``a`` -- the numerator
 
         - ``b`` -- the denominator
 
@@ -344,7 +393,7 @@ class GFElem():
         ::
 
         """
-        if not isinstance(a, _RInteger) and not isinstance(a, _Integer) and not isinstance(a, int) and not isinstance(a, long): 
+        if not isinstance(a, _RInteger) and not isinstance(a, _Integer) and not isinstance(a, int) and not isinstance(a, long):
             raise Exception("divmod does not accept %s as input" % type(a))
         if a == 0:
             return 0, 0
@@ -362,11 +411,11 @@ class GFElem():
 
     def deg(self):
         """
-        Returns the degree of the field element's polynomial 
+        Returns the degree of the field element's polynomial
 
         OUTPUT:
-        
-        The degree of the corresponding polynomial. Returns -1 for 
+
+        The degree of the corresponding polynomial. Returns -1 for
         a zero element.
 
         EXAMPLES:
@@ -376,7 +425,7 @@ class GFElem():
             sage: from mage import finite_field as mf
             sage: G = mf.GF(0b100011011)
             sage: a = G.elem(0b10011)
-            sage: a.deg() 
+            sage: a.deg()
             4
             sage: G.elem(0b1).deg()
             0
@@ -427,7 +476,7 @@ class GFElem():
         return a.n == b.n
 
     def __xor__(a, b):
-        return a.field.elem(a.n ^ b.n) 
+        return a.field.elem(a.n ^ b.n)
 
     def __rshift__(a, b):
         return a.field.elem(a.n >> b)
@@ -464,14 +513,14 @@ class GFElem():
                 v = (v >> 1) ^ r
         return a.field.elem(z)
 
-    
+
     #TODO(kkl): This is broken!
     def inverse(self):
         """
         Returns the inverse of the field element.
 
         OUTPUT:
-        
+
         The inverse of the element.
 
         EXAMPLES:
