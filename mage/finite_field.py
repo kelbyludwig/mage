@@ -92,6 +92,8 @@ class RingPolynomial():
             sage: r = (g*g*g) % h
             sage: r == pow(g, 3, h)
             True
+            sage: g == g._random_polynomial()
+            False
 
         ::
 
