@@ -94,6 +94,14 @@ class RingPolynomial():
             True
             sage: g == g._random_polynomial()
             False
+            sage: a = mf.RingPolynomial(Zmod(5), [1, 0, 1, 0, 1])
+            sage: a.to_string()
+            '1*x^4 + 1*x^2 + 1*x^0'
+            sage: f1, f2 = a.edf(2)
+            sage: f1.to_string()
+            '1*x^2 + 4*x^1 + 1*x^0'
+            sage: f2.to_string()
+            '1*x^2 + 1*x^1 + 1*x^0'
 
         ::
 
@@ -189,6 +197,9 @@ class RingPolynomial():
             base = (base * base) % mod
         return result
 
+    def __hash__(self):
+        return hash(str(self.ring) + "::" + self.to_string())
+
     def is_zero(self):
         s = RingPolynomial(self.ring, self.coefficients)
         return len(s.coefficients) == 0
@@ -267,26 +278,29 @@ class RingPolynomial():
         cfs = [randint(0, order) for _ in range(len(self.coefficients))]
         return RingPolynomial(self.ring, cfs)
 
-    #def edf(f, d):
-    #    n = f.degree()
-    #    r = n / d
-    #    S = set(f)
+    def edf(f, d):
+        n = f.degree()
+        r = n / d
+        S = set([f])
+        qd = f.ring.order() ^ n
+        one = RingPolynomial(f.ring, [1])
 
-    #    while len(S) < r:
-    #        h = f._random_polynomial()
-    #        g = gcd(h, f)
+        while len(S) < r:
+            h = f._random_polynomial()
+            g = h.gcd(f)
 
-    #        if g == 1:
-    #            g = h^((q^d - 1)/3) - 1 mod f
+            if g == one:
+                g = pow(h, ((qd - 1)/3) - 1, f)
 
-    #        for u in S:
-    #            if deg(u) = d:
-    #                continue
+            for u in S:
+                if u.degree() == d:
+                    continue
 
-    #            if gcd(g, u) != 1 and gcd(g, u) != u:
-    #                S = union(S - {u}, {gcd(g, u), u / gcd(g, u)})
+                if g.gcd(u) != one and g.gcd(u) != u:
+                    S1 = S - set([u])
+                    S = S1.union(set([g.gcd(u), u / g.gcd(u)]))
 
-    #    return S
+        return S
 
 
     def gcd(g, h):
